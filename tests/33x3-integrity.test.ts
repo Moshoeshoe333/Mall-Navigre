@@ -18,8 +18,14 @@ describe("33x3 integrity sieve — failure degree", () => {
   });
 
   it("detects disconnected active infrastructure", () => {
-    const isolated = { ...mallOfAfricaGraph, nodes: [{ ...mallOfAfricaGraph.nodes[0], status: "active" as const }] };
+    const isolated = {
+      ...mallOfAfricaGraph,
+      nodes: [
+        ...mallOfAfricaGraph.nodes,
+        { ...mallOfAfricaGraph.nodes[1], id: "isolated-corridor", type: "corridor" as const, status: "active" as const },
+      ],
+    };
     const report = validateMallGraph(isolated);
-    expect(report.issues.some((issue) => issue.code === "DISCONNECTED_NODE")).toBe(true);
+    expect(report.issues.some((issue) => issue.code === "DISCONNECTED_NODE" && issue.entityId === "isolated-corridor")).toBe(true);
   });
 });
