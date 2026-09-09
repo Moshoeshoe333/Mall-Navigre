@@ -28,11 +28,12 @@ function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === "undefined") return reject(new Error("IndexedDB unavailable"));
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = (event) => {
       const db = request.result;
       const transaction = request.transaction;
       if (!transaction) return;
-      for (let version = request.oldVersion + 1; version <= DB_VERSION; version += 1) {
+      const oldVersion = event.oldVersion;
+      for (let version = oldVersion + 1; version <= DB_VERSION; version += 1) {
         migrations[version]?.(db, transaction);
       }
     };
