@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { shouldRequestLandmarkConfirmation } from "@/domain/parking/state";
 import { validateMallGraph } from "@/domain/integrity/validateMall";
-import { findRoute } from "@/domain/routing/aStar";
+import { findRoute } from "@/domain/routing/route";
 import type { MallGraph } from "@/domain/navigation/types";
 
 const graph: MallGraph = {
@@ -21,9 +21,7 @@ describe("Parking Truth Test", () => {
     expect(shouldRequestLandmarkConfirmation(0.5)).toBe(false);
   });
 
-  it("accepts a coherent graph", () => {
-    expect(validateMallGraph(graph).valid).toBe(true);
-  });
+  it("accepts a coherent graph", () => expect(validateMallGraph(graph).valid).toBe(true));
 
   it("rejects dangling edges", () => {
     const invalid = { ...graph, edges: [{ ...graph.edges[0], toNodeId: "missing" }] };
@@ -32,14 +30,20 @@ describe("Parking Truth Test", () => {
     expect(report.issues.some((i) => i.code === "MISSING_TO_NODE")).toBe(true);
   });
 
-  it("routes around active graph edges", () => {
+  it("finds the shortest route", () => {
     const route = findRoute(graph, "parking-a", "gate-16");
     expect(route?.nodeIds).toEqual(["parking-a", "gate-16"]);
     expect(route?.distanceMeters).toBe(20);
+    expect(route?.verified).toBe(true);
   });
 
   it("does not traverse unavailable edges", () => {
     const unavailable = { ...graph, edges: [{ ...graph.edges[0], status: "temporarily_unavailable" as const }] };
     expect(findRoute(unavailable, "parking-a", "gate-16")).toBeNull();
+  });
+
+  it("supports accessible-only routing", () => {
+    const inaccessible = { ...graph, edges: [{ ...graph.edges[0], accessible: false }] };
+    expect(findRoute(inaccessible, "parking-a", "gate-16", true)).toBeNull();
   });
 });
