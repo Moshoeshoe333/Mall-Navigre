@@ -14,7 +14,7 @@ export const MallNodeSchema = z.object({
   id: z.string().min(1),
   mallId: z.string().min(1),
   levelId: z.string().min(1),
-  parkadeId: z.string().min(1).optional(),
+  parkadeId: z.string().nullable(),
   type: NodeType,
   name: z.string().min(1),
   position: z.object({ x: z.number().finite(), y: z.number().finite() }),
