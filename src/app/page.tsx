@@ -21,8 +21,7 @@ export default function Home() {
     setOnline(navigator.onLine);
     const onOnline = () => setOnline(true);
     const onOffline = () => setOnline(false);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
+    window.addEventListener("online", onOnline); window.addEventListener("offline", onOffline);
     loadActiveParkingSession().then(setSession).catch(() => setMessage("Local storage unavailable on this device."));
     return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
   }, []);
@@ -33,30 +32,21 @@ export default function Home() {
       landmarkId: "p4-start", capturedAt: new Date().toISOString(), source: "manual", confidence: 1,
       note: "Saved manually — exact bay not claimed.",
     };
-    await saveParkingSession(next);
-    setSession(next);
-    setRouteDistance(null);
-    setMessage("Parking Passport saved locally. It survives app restart and network loss.");
+    await saveParkingSession(next); setSession(next); setRouteDistance(null);
+    setMessage("Parking Passport saved locally. Close and reopen: the passport should still be here.");
   }
 
   async function clearCar() {
-    await clearActiveParkingSession();
-    setSession(null);
-    setRouteDistance(null);
-    setMessage("Parking Passport cleared.");
+    await clearActiveParkingSession(); setSession(null); setRouteDistance(null); setMessage("Parking Passport cleared.");
   }
 
   function routeToCar() {
     if (!session?.landmarkId) return;
-    if (shouldRequestLandmarkConfirmation(session.confidence)) {
-      setMessage("Confidence is low. Confirm a visible parking landmark before navigating.");
-      return;
-    }
+    if (shouldRequestLandmarkConfirmation(session.confidence)) { setMessage("Confidence is low. Confirm a visible parking landmark before navigating."); return; }
     const route = findRoute(mallOfAfricaGraph, START_NODE, session.landmarkId);
     if (!route) { setMessage("No usable route is available from this point."); return; }
-    setRouteDistance(route.distanceMeters);
-    setRouteVerified(route.verified);
-    setMessage(route.verified ? "Route ready on verified graph data." : "Route found, but this V1 geometry is unverified. Treat it as guidance, not survey-grade positioning.");
+    setRouteDistance(route.distanceMeters); setRouteVerified(route.verified);
+    setMessage(route.verified ? "Route ready on verified graph data." : "Route found, but this V1 geometry is unverified. Use it as guidance, not survey-grade positioning.");
   }
 
   return (
@@ -74,7 +64,7 @@ export default function Home() {
         <aside className="card panel">
           <h2>Parking Passport</h2>
           {session ? <div className="saved"><strong>Car location saved</strong><div className="meta">Parkade C · Level 4<br />Manual capture · exact bay not claimed</div><div className="confidence" style={{ marginTop: 12 }}><span>Confidence</span><strong>{Math.round(session.confidence * 100)}%</strong></div></div> : <div className="saved"><strong>No active parking session</strong><div className="meta">Save a location and Navigre keeps it on this device, including when you go offline.</div></div>}
-          <div className="actions"><button className="action" onClick={saveCar}>Save My Car</button><button className="action secondary" onClick={routeToCar} disabled={!session}>Find My Car</button>{session && <button className="action secondary" onClick={clearCar}>Clear Passport</button>}</div>
+          <div className="actions"><button className="action" onClick={saveCar}>{session ? "Update My Car" : "Save My Car"}</button><button className="action secondary" onClick={routeToCar} disabled={!session}>Find My Car</button>{session && <button className="action secondary" onClick={clearCar}>Clear Passport</button>}</div>
           <div className="meta">{message}</div>
           <div className="warning">TRUTH MODE: GPS is not treated as an exact indoor bay locator. Localization is replaceable; navigation remains stable. Unverified geometry is disclosed rather than hidden.</div>
         </aside>
