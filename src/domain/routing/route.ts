@@ -7,17 +7,34 @@ export type RouteResult = {
   verified: boolean;
 };
 
+/**
+ * Derive a conservative geometry-to-distance scale from the graph itself.
+ * This keeps the heuristic admissible even when V1 coordinates are schematic.
+ */
 function heuristic(graph: MallGraph, a: string, b: string): number {
   const from = graph.nodes.find((n) => n.id === a);
   const to = graph.nodes.find((n) => n.id === b);
-  return from && to ? Math.hypot(from.position.x - to.position.x, from.position.y - to.position.y) : 0;
+  if (!from || !to) return 0;
+
+  let scale = Infinity;
+  for (const edge of graph.edges) {
+    const left = graph.nodes.find((n) => n.id === edge.fromNodeId);
+    const right = graph.nodes.find((n) => n.id === edge.toNodeId);
+    if (!left || !right) continue;
+    const geometric = Math.hypot(left.position.x - right.position.x, left.position.y - right.position.y);
+    if (geometric > 0) scale = Math.min(scale, edge.distanceMeters / geometric);
+  }
+  if (!Number.isFinite(scale)) return 0;
+  return Math.hypot(from.position.x - to.position.x, from.position.y - to.position.y) * Math.max(0, scale);
 }
 
-/** Correctness-first A*. Edge distance is authoritative; geometry is only a heuristic. */
+/** Correctness-first A*. Edge distance is authoritative; schematic geometry is only a conservative heuristic. */
 export function findRoute(graph: MallGraph, startNodeId: string, targetNodeId: string, accessibleOnly = false): RouteResult | null {
   const usable = new Set(graph.nodes.filter((n) => n.status !== "temporarily_unavailable").map((n) => n.id));
   if (!usable.has(startNodeId) || !usable.has(targetNodeId)) return null;
-  if (startNodeId === targetNodeId) return { nodeIds: [startNodeId], edgeIds: [], distanceMeters: 0, verified: graph.nodes.find((n) => n.id === startNodeId)?.status === "active" };
+  if (startNodeId === targetNodeId) {
+    return { nodeIds: [startNodeId], edgeIds: [], distanceMeters: 0, verified: graph.nodes.find((n) => n.id === startNodeId)?.status === "active" };
+  }
 
   const g = new Map<string, number>([[startNodeId, 0]]);
   const f = new Map<string, number>([[startNodeId, heuristic(graph, startNodeId, targetNodeId)]]);
@@ -39,9 +56,7 @@ export function findRoute(graph: MallGraph, startNodeId: string, targetNodeId: s
       let cursor = current;
       while (previous.has(cursor)) {
         const step = previous.get(cursor)!;
-        nodeIds.unshift(step.nodeId);
-        edgeIds.unshift(step.edge.id);
-        cursor = step.nodeId;
+        nodeIds.unshift(step.nodeId); edgeIds.unshift(step.edge.id); cursor = step.nodeId;
       }
       const verified = nodeIds.every((id) => graph.nodes.find((n) => n.id === id)?.status === "active") &&
         edgeIds.every((id) => graph.edges.find((e) => e.id === id)?.status === "active");
