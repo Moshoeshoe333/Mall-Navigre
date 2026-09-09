@@ -16,7 +16,11 @@ The first build is intentionally narrow: prove the **Parking Truth Test** before
 - Local-first: the last valid parking state remains useful without network access.
 - Canonical mall infrastructure is separate from user-generated state.
 - Localization is a replaceable service; navigation is not.
-- Confidence is explicit. Navigre never invents exact indoor precision.
+- Every spatial node has explicit mall/level/parkade context and may carry a physical visual landmark.
+- Confidence is explicit; below `0.5`, the experience must request landmark confirmation rather than silently trusting weak positioning.
+- GPS does not become indoor precision by assertion.
+- Unverified geometry is disclosed.
+- Temporarily unavailable infrastructure is never routable.
 - Correctness comes before optimization; measured performance earns complexity.
 - The **33 × 3 sieve** is an architectural audit, not a list of 99 features.
 
@@ -37,7 +41,7 @@ Mall-Navigre/
 
 ## V1 boundary
 
-Included: typed domain models, runtime validation, graph integrity, deterministic routing, Parking Passport, local persistence, offline-aware state, schematic 2D navigation, data validation, and automated tests.
+Included: typed domain models, runtime validation, graph integrity, deterministic A* routing, Parking Passport, IndexedDB persistence, offline-aware state, schematic 2D navigation, confidence handling, data validation, and automated tests.
 
 Deferred: BLE infrastructure, AR, AI Copilot, predictive routing, computer vision, live crowd intelligence, advertising, loyalty, social features, and a full CMS.
 
@@ -47,4 +51,4 @@ Mall geometry in the initial seed is deliberately **schematic/unverified** until
 
 ## Status
 
-Foundation implemented. Next engineering milestone: harden the persistence/recovery path, expand validated Mall of Africa data, and run the complete build/test loop before broadening the feature surface.
+Core contracts, integrity checks, routing, persistence, UI, and failure-mode tests are implemented on the `feat/parking-truth-core` branch. The next gate is automated CI/build verification before merging to `main`.

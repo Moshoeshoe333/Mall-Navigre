@@ -5,8 +5,8 @@ export const ParkingSourceSchema = z.enum(["manual", "gps", "ble", "wifi", "visu
 export const ParkingSessionSchema = z.object({
   id: z.string().min(1),
   mallId: z.string().min(1),
-  parkadeId: z.string().min(1).optional(),
-  levelId: z.string().min(1).optional(),
+  parkadeId: z.string().min(1),
+  levelId: z.string().min(1),
   zoneId: z.string().min(1).optional(),
   landmarkId: z.string().min(1).optional(),
   bayId: z.string().min(1).optional(),
