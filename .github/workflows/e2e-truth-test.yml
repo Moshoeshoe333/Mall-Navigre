@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   e2e:
@@ -20,20 +20,7 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            npm install
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "chore: add npm lockfile"
-            git push
-          else
-            echo "package-lock.json is missing on this pull request; main must bootstrap it before merge."
-            npm install
-          fi
+        run: npm ci
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: Run production build
