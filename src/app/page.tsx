@@ -27,18 +27,30 @@ export default function Home() {
   const session = hydration.status === "RESTORED" ? hydration.session : null;
 
   useEffect(() => {
+    let mounted = true;
     setOnline(navigator.onLine);
     const onOnline = () => setOnline(true);
     const onOffline = () => setOnline(false);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     setHydration({ status: "HYDRATING" });
-    loadActiveParkingSession().then((result: ParkingLoadResult) => {
-      setHydration(result);
-      if (result.status === "RESTORED") setMessage("Parking Passport restored from this device.");
-      if (result.status === "CORRUPTED" || result.status === "STORAGE_ERROR") setMessage(result.error);
-    });
-    return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
+    loadActiveParkingSession()
+      .then((result: ParkingLoadResult) => {
+        if (!mounted) return;
+        setHydration(result);
+        if (result.status === "RESTORED") setMessage("Parking Passport restored from this device.");
+        if (result.status === "CORRUPTED" || result.status === "STORAGE_ERROR") setMessage(result.error);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setHydration({ status: "STORAGE_ERROR", error: "Unexpected local storage failure." });
+        setMessage("Unexpected local storage failure.");
+      });
+    return () => {
+      mounted = false;
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
   }, []);
 
   async function saveCar() {
