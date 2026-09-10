@@ -1,67 +1,123 @@
-# NAVIGRE 2 — Core 0.2 — Gate 2 Confidence Contract v1
+# NAVIGRE 2 — Core 0.2 — Gate 2 Confidence Contract v2
 
-**Status:** Contract draft / architecture decision pending production promotion  
+**Status:** Candidate contract — Policy C + independent seven-day freshness gate  
 **Gate:** Core 0.2 — Gate 2: Confidence Formalization  
-**Production integration:** NOT AUTHORIZED by this document  
+**Production integration:** NOT AUTHORIZED until promotion criteria are satisfied  
 **Gate 3:** FROZEN
 
 ## 1. Purpose
 
-Gate 2 formalizes how Navigre evaluates the trustworthiness of a parking observation without silently changing the historical meaning of the persisted `ParkingSession.confidence` field.
+Gate 2 formalizes parking-observation trust without silently changing the historical meaning of persisted `ParkingSession.confidence`.
 
-This contract separates:
+Contract v2 adopts the semantic model selected by Pass 5:
 
-1. **stored observation confidence** — the value captured with a parking session;
-2. **effective confidence** — a derived runtime value, if and when the Gate 2 policy is explicitly enabled;
-3. **routing authorization** — the policy decision that determines whether navigation may proceed.
+1. **Stored Observation Confidence** answers: "How trustworthy was the observation when recorded or last updated?"
+2. **Freshness** answers: "How old is the observation?"
+3. **Routing Authorization** evaluates the applicable safety policy using those separate dimensions plus graph and route constraints.
 
-The distinction is mandatory. A derived confidence calculation must not become a replacement for persisted confidence merely because the calculator exists.
+These dimensions MUST remain separate.
 
-## 2. Historical Core 0.1 semantics
+Age MUST NOT mutate or overwrite persisted `ParkingSession.confidence` merely because time has elapsed.
 
-The Core 0.1 Parking Passport stores `confidence` as a bounded value in `[0, 1]`, together with `source`, `capturedAt`, and optional `updatedAt`.
+## 2. Decision record
 
-Core 0.1 defines the user-facing routing boundary as:
+### Candidate policy
 
-- confidence `< 0.50`: request visible landmark confirmation;
-- confidence `>= 0.50`: eligible to pass the confidence confirmation boundary.
+**Policy C — Stored Observation Confidence + Independent Freshness.**
 
-The existing production flow currently consumes the persisted `session.confidence` through `shouldRequestLandmarkConfirmation(session.confidence)` before calling the routing engine.
+The Pass 5 simulation rejected uniform decay as the preferred production semantic because it makes a manually confirmed observation progressively lose its stored meaning solely through elapsed time. Source-class decay is safer but still couples freshness to confidence for sensor observations.
 
-**Compatibility rule:** Core 0.2 MUST preserve this historical interpretation until a separately accepted migration contract authorizes otherwise.
+Policy C preserves the existing field semantics and gives freshness its own explicit safety authority.
 
-## 3. Stored observation confidence
+### Candidate stale rule
 
-`ParkingSession.confidence` represents Navigre's explicit estimate of how trustworthy the parking observation was when it was recorded or last updated.
+The seven-day stale boundary is adopted as an **independent freshness safety gate** for Gate 2:
 
-It is **not** defined as:
+- age `< 7 days` → not stale;
+- age `>= 7 days` → stale and requires visible landmark confirmation before parking routing;
+- invalid or non-evaluable temporal data → freshness cannot authorize routing and must fail closed;
+- a newer accepted observation/update refreshes freshness using `updatedAt ?? capturedAt`.
 
-- a probability that the car is physically at the claimed location;
-- a continuously changing clock value;
-- a guarantee that the current user is still parked there;
-- a survey-grade localization measurement.
+This is a declared product safety boundary, not a claim of physical certainty.
 
-The persisted value remains bounded to `[0, 1]` by the canonical schema.
+### Explicit rejection
 
-## 4. Effective confidence
+The 24-hour half-life remains an analytical/experimental primitive and is **not** the production authority for persisted manual confidence under v2.
 
-Gate 2 introduces the concept of an **effective confidence** as a derived runtime assessment.
+The current calculator MUST NOT be wired into production as a replacement for `ParkingSession.confidence`.
 
-The current experimental calculator uses:
+## 3. Historical Core 0.1 compatibility
 
-`effectiveConfidence = authorizedSourceWeight × temporalDecay`
+Core 0.1 stores `confidence` as a bounded value in `[0, 1]`, together with `source`, `capturedAt`, and optional `updatedAt`.
 
-with a 24-hour half-life.
+The historical confidence boundary remains:
 
-This calculation is currently a **domain primitive**, not production routing authority.
+- `< 0.50` → visible landmark confirmation required;
+- `>= 0.50` → eligible to pass the confidence boundary.
 
-The calculator MUST NOT overwrite persisted `ParkingSession.confidence`.
+Contract v2 preserves this interpretation.
 
-The calculator MUST NOT be wired into production routing until the temporal and source policies in this contract are explicitly accepted and the resulting behavior is covered by executed integration evidence.
+The production flow MUST NOT silently reinterpret persisted confidence as a temporal decay score.
 
-## 5. Source provenance policy
+## 4. Stored Observation Confidence
 
-The canonical source set is:
+`ParkingSession.confidence` is the persisted observation-trust value.
+
+It is not:
+
+- a probability that the car is physically present;
+- a continuously decaying clock;
+- a guarantee of current parking truth;
+- survey-grade localization accuracy.
+
+It remains bounded by the canonical schema and MUST NOT be rewritten by freshness evaluation.
+
+### Non-mutation invariant
+
+For an unchanged persisted session:
+
+```text
+storedBefore === storedAfter
+```
+
+after any confidence/freshness calculation.
+
+Any migration that intentionally changes the stored field requires a separately specified migration contract.
+
+## 5. Freshness
+
+Freshness is a separate derived domain dimension.
+
+The temporal reference is:
+
+```text
+freshnessObservedAt = updatedAt ?? capturedAt
+```
+
+A valid timestamp is required for freshness authorization.
+
+### Seven-day boundary
+
+```text
+age < 7 days  => fresh enough for the stale-state gate
+age >= 7 days => stale
+```
+
+The stale gate does not modify stored confidence.
+
+### Future timestamps
+
+A timestamp later than the evaluation time MUST NOT make a record appear more authoritative than its declared stored observation confidence.
+
+Future temporal data is non-authorizing for freshness until a valid temporal state exists.
+
+### Invalid timestamps
+
+Malformed, non-finite, or otherwise invalid temporal data MUST fail closed for freshness authorization.
+
+## 6. Source provenance
+
+The canonical source set remains:
 
 - `manual`
 - `gps`
@@ -69,267 +125,218 @@ The canonical source set is:
 - `wifi`
 - `visual`
 
-The current Gate 2 calculator authorizes these base weights:
+The Gate 2 calculator's experimental source weights remain documented as:
 
-| Source | Base weight | Gate 2 status |
+| Source | Experimental base weight | v2 production meaning |
 |---|---:|---|
-| manual | 1.00 | authorized for calculation |
-| BLE | 0.85 | authorized for calculation |
-| Wi-Fi | 0.70 | authorized for calculation |
-| GPS | 0.40 | authorized; below routing threshold |
-| visual | undefined | fail closed pending explicit policy |
+| manual | 1.00 | stored confidence remains authoritative for observation trust |
+| BLE | 0.85 | experimental only; not a replacement for stored confidence |
+| Wi-Fi | 0.70 | experimental only; not a replacement for stored confidence |
+| GPS | 0.40 | experimental; GPS alone remains below the 0.50 boundary |
+| visual | undefined | fail closed until explicitly authorized |
 
-No source may receive an invented weight merely to make a calculation complete.
+No source receives an invented production weight.
 
-## 6. Temporal semantics
+## 7. Manual observation policy
 
-### 6.1 Current contract position
+A manually saved parking location is a user-confirmed observation.
 
-The 24-hour half-life is **experimental Gate 2 policy**, not yet an accepted universal freshness rule for all parking observations.
+Its stored confidence is preserved over time. Passage of 24 or 48 hours MUST NOT automatically reduce `ParkingSession.confidence`.
 
-`updatedAt` takes precedence over `capturedAt` when the calculator evaluates observation time, matching the current Gate 2 primitive.
+Freshness may still become stale at the seven-day safety boundary.
 
-Future timestamps are clamped so they cannot increase confidence beyond the authorized source weight.
+Therefore:
 
-Invalid timestamps fail closed.
+```text
+manual observation
+    ↓
+stored confidence remains stable
+    ↓
+freshness ages independently
+    ↓
+>= 7 days → landmark confirmation required
+```
 
-### 6.2 Seven-day stale state
+This prevents the manual-save trap identified during Pass 5 while preserving an explicit maximum-age safety gate.
 
-Core 0.1 currently contains a separate parking-state rule that treats a session as `stale` when the relevant timestamp is more than seven days old.
+## 8. Sensor observations
 
-The relationship between:
+Sensor observations retain their stored observation confidence.
 
-- 24-hour confidence decay, and
-- seven-day stale state
+Gate 2 may later introduce source-specific freshness or effective-confidence policy, but such a change requires a new accepted contract or explicit amendment.
 
-is intentionally **not inferred** by this contract.
+The experimental 24-hour calculator is not sufficient authority to overwrite or replace stored confidence.
 
-They represent potentially different concepts and must not be merged without an explicit decision.
+## 9. Visual observations
 
-## 7. Manual-observation policy
+`visual` has no authorized Gate 2 production weight.
 
-A manually saved parking location is a user-confirmed observation and currently receives a base confidence of `1.00` in the Gate 2 calculator.
+Until provenance, capture semantics, and reliability policy are explicitly defined, visual evidence MUST fail closed where Gate 2 authorization requires a source policy.
 
-However, this contract does **not** yet declare that a manually confirmed observation must decay with the same 24-hour half-life as sensor observations.
+## 10. Routing authorization invariant
 
-Before production promotion, one of the following policies must be explicitly selected:
-
-### Policy A — Uniform decay
-
-All authorized sources decay using the same temporal function.
-
-Consequence: a manual `1.00` observation reaches `0.50` after 24 hours and becomes `<0.50` after 24 hours plus any additional elapsed time.
-
-### Policy B — Source-class decay
-
-Manual observations retain their observation confidence while sensor-derived observations decay according to freshness.
-
-Consequence: stored manual confirmation and sensor freshness are treated as different trust dimensions.
-
-### Policy C — Observation confidence + independent freshness
-
-Stored confidence remains stable, while freshness is evaluated separately as another routing input.
-
-Consequence: confidence does not silently become a proxy for session age.
-
-**Gate 2 v1 recommendation:** Policy C is the cleanest semantic model pending evidence because it avoids redefining an existing field while still allowing freshness to influence navigation safety.
-
-This recommendation is not a production authorization.
-
-## 8. Visual-source policy
-
-`visual` is part of the canonical Core 0.1 source enum but has no authorized Gate 2 weight.
-
-Until a provenance contract establishes what constitutes a visual observation and how its reliability is measured, visual observations MUST fail closed within the Gate 2 calculator rather than receive an arbitrary confidence value.
-
-## 9. Routing authorization invariant
-
-Routing authorization is a policy decision, not the confidence calculation itself.
+Routing authorization is a composite decision.
 
 At minimum:
 
 ```text
 RoutingAllowed iff
-    navigation state is valid
-    AND parking observation satisfies its applicable confidence/freshness policy
-    AND required graph integrity constraints hold
+    valid parking identity
+    AND stored confidence passes its applicable boundary
+    AND freshness is valid
+    AND freshness is not stale
+    AND graph integrity constraints hold
     AND a route exists
     AND no applicable safety constraint rejects the route.
 ```
 
-For the confidence boundary specifically:
+For the historical confidence boundary:
 
 ```text
-finite value >= 0.50
-    => eligible to pass the confidence boundary
+finite stored confidence >= 0.50
+    => eligible to pass confidence confirmation
 
-finite value < 0.50
-    => confirmation/recovery required
+finite stored confidence < 0.50
+    => landmark confirmation/recovery required
 
-NaN, +Infinity, -Infinity, invalid or unsupported evidence
+NaN, +Infinity, -Infinity
     => fail closed
 ```
 
-This does not mean that `0.50` alone guarantees a physically correct route. Graph integrity, route existence, and other declared constraints remain independent requirements.
-
-## 10. Preservation of routing architecture
-
-The routing engine consumes graph nodes and edges. It does not directly consume GPS, BLE, or Wi-Fi observations.
-
-Gate 2 MUST preserve this separation.
-
-Confidence determines whether the parking state is sufficiently trustworthy to enter navigation; it does not change the routing algorithm's graph semantics.
-
-The route's own `verified` state remains distinct from parking-observation confidence.
-
-Therefore:
+For freshness:
 
 ```text
-parking observation confidence
-        !=
+valid age < 7 days
+    => freshness gate passes
+
+valid age >= 7 days
+    => landmark confirmation required
+
+invalid temporal evidence
+    => freshness gate fails closed
+```
+
+A `0.50` confidence value does not guarantee physical parking truth or route correctness. It only satisfies the declared confidence boundary.
+
+## 11. Route verification remains independent
+
+Parking-observation confidence/freshness MUST NOT be conflated with `RouteResult.verified`.
+
+```text
+parking observation trust + freshness
+                 !=
 route geometry verification
 ```
 
-Neither value may be presented as a substitute for the other.
+A route may remain explicitly unverified even when parking authorization succeeds.
 
-## 11. Failure and fail-closed rules
+Gate 2 does not upgrade route geometry.
+
+## 12. Failure and fail-closed rules
 
 Gate 2 MUST fail closed when:
 
-- the observation source is unsupported;
-- the source has no authorized policy;
-- an observation timestamp is invalid;
-- calculated confidence is non-finite;
-- required parking identity is invalid;
-- applicable routing confidence is below threshold.
+- parking identity is invalid;
+- stored confidence is non-finite;
+- stored confidence is below the applicable threshold;
+- freshness timestamp is invalid;
+- freshness is stale;
+- an unsupported source is being used as sole authorization evidence;
+- an applicable policy cannot be evaluated safely.
 
-Failing closed means rejecting authorization, requesting confirmation, degrading the state, or otherwise refusing to represent unsupported certainty as verified truth.
+Fail closed means refusing authorization, requesting visible landmark confirmation, degrading state, or otherwise avoiding unsupported certainty.
 
-## 12. Compatibility with `ParkingSession`
+## 13. Offline and local-first compatibility
 
-Gate 2 MUST consume the canonical Core 0.1 `ParkingSession` contract rather than introducing a duplicate parking-session schema.
+Gate 2 MUST preserve the local-first Parking Passport workflow.
 
-The current experimental calculator intentionally accepts the narrow projection:
+An offline reload must be able to validate and read the persisted session without requiring a network request merely to preserve stored observation confidence.
 
-```ts
-Pick<ParkingSession, "source" | "capturedAt" | "updatedAt">
-```
+Freshness is evaluated locally from the accepted temporal fields.
 
-No persistence migration is required merely to define effective confidence.
+No network availability may be treated as proof of parking truth.
 
-Any future schema migration must be separately specified and tested.
+## 14. Persistence boundary
 
-## 13. Boundary examples
+Gate 2 calculation and freshness evaluation MUST NOT mutate persistence as a side effect.
 
-### Example 1 — New manual save
+The persistence layer remains responsible for validating/storing the canonical `ParkingSession`.
 
-```text
-source = manual
-stored confidence = 1.00
-age = 0
-```
+The policy layer may derive runtime authorization state without rewriting the underlying observation.
 
-The observation is eligible under the historical Core 0.1 confidence boundary.
+## 15. Acceptance tests — Contract v2
 
-### Example 2 — Manual save after one day
+Before production promotion, tests MUST establish:
 
-Under the experimental uniform-decay calculator:
+1. stored confidence remains bounded to `[0,1]`;
+2. stored confidence is unchanged after freshness evaluation;
+3. manual confidence remains unchanged at 24h and 48h;
+4. `<0.50` requires landmark confirmation;
+5. exact `0.50` remains eligible for the confidence boundary;
+6. non-finite stored confidence fails closed;
+7. age `<7 days` passes the stale-state gate when timestamp data is valid;
+8. age `>=7 days` requires landmark confirmation;
+9. invalid timestamps fail closed for freshness;
+10. future timestamps do not create freshness authorization;
+11. `updatedAt` takes precedence over `capturedAt`;
+12. a newer accepted update refreshes freshness without changing unrelated stored confidence;
+13. visual source remains fail closed without explicit policy;
+14. GPS alone cannot satisfy the `0.50` confidence boundary under the declared source policy;
+15. parking authorization and `RouteResult.verified` remain independent;
+16. offline save → reload preserves stored confidence;
+17. offline save → reload → find enforces the accepted freshness/confidence policy;
+18. the existing Core 0.1 routing path remains behaviorally compatible for sessions that are below seven days and satisfy the historical confidence boundary.
 
-```text
-1.00 × 0.5 = 0.50
-```
-
-This exposes the semantic decision that must be resolved before production integration. It MUST NOT be treated as proof that the manual parking observation itself has become physically unreliable.
-
-### Example 3 — GPS observation at capture time
-
-```text
-source weight = 0.40
-```
-
-GPS alone cannot satisfy the `0.50` confidence routing boundary.
-
-### Example 4 — Invalid timestamp
-
-```text
-observedAt = invalid
-```
-
-The calculator returns a fail-closed result and routing authorization MUST NOT be granted on that basis.
-
-### Example 5 — Unverified route geometry
-
-A parking observation may satisfy its confidence policy while the graph route remains `verified: false`.
-
-The system MUST disclose that distinction rather than upgrading the route to verified status.
-
-## 14. Acceptance tests for Gate 2
-
-Before Gate 2 is promoted beyond domain-primitive status, tests MUST establish at least:
-
-1. source weights are exactly the authorized values;
-2. unsupported sources fail closed;
-3. confidence remains within `[0, 1]`;
-4. invalid timestamps fail closed;
-5. future timestamps cannot increase confidence;
-6. half-life behavior is deterministic;
-7. `updatedAt` precedence is deterministic;
-8. routing boundary is exact at `0.50`;
-9. non-finite values cannot authorize routing;
-10. persisted `ParkingSession.confidence` is not mutated by calculation;
-11. manual-observation policy is explicitly tested once selected;
-12. effective confidence and route verification remain separate;
-13. production decision-chain integration is tested end-to-end before promotion.
-
-## 15. Evidence requirements
+## 16. Evidence requirements
 
 Gate 2 status MUST obey the NAVIGRE Evidence Ledger:
 
-- **Level 1 — Defined:** this contract and its invariants exist and are accepted.
-- **Level 2 — Implemented:** production/domain code implements the accepted contract.
-- **Level 3 — Tested:** corresponding test artifacts exist.
-- **Level 4 — Executed:** tests physically run and pass.
-- **Level 5 — Integrated:** the accepted behavior is verified across adjacent system layers.
-- **Level 6 — Operational:** behavior is proven in real-world conditions or immutable release evidence.
+- **L1 — Defined:** Contract v2 is accepted as the governing semantic model.
+- **L2 — Implemented:** domain production code implements the accepted contract.
+- **L3 — Tested:** corresponding test artifacts exist.
+- **L4 — Executed:** tests physically run and pass.
+- **L5 — Integrated:** adjacent persistence, routing, and UI behavior are verified together.
+- **L6 — Operational:** behavior is proven in real-world conditions or immutable release evidence.
 
-The existence of the current calculator and test files does not by itself establish Level 4 or Level 5.
+No claim may exceed the lowest supporting evidence level.
 
-No Gate 2 claim may exceed its lowest supporting evidence level.
+The contract itself is currently a **candidate decision artifact** until explicitly accepted; writing it does not elevate implementation or execution evidence.
 
-## 16. Explicit non-goals
+## 17. Promotion criteria
 
-Gate 2 does not, by itself:
+Gate 2 may enter the production decision chain only after:
+
+1. Contract v2 is accepted;
+2. the v2 regression suite is implemented;
+3. the regression suite physically executes and passes;
+4. exact-commit execution evidence is recorded;
+5. the smallest policy-owned routing authorization boundary is implemented;
+6. production integration tests pass;
+7. Save → Reload → Find is verified offline;
+8. no Core 0.1 compatibility regression is demonstrated;
+9. Gate 3 remains frozen.
+
+Until then, the existing Core 0.1 production confidence behavior remains authoritative.
+
+## 18. Explicit non-goals
+
+Gate 2 v2 does not:
 
 - prove physical parking truth;
 - provide indoor positioning;
 - establish survey-grade coordinates;
-- authorize exact bay claims;
+- authorize exact parking-bay claims;
 - replace graph integrity validation;
 - replace route verification;
 - resolve concurrency conflicts;
 - introduce multi-mall support;
 - authorize sensor hardware deployment;
-- change persisted confidence semantics without a migration decision.
+- mutate stored confidence merely because time elapsed.
 
-## 17. Promotion criteria
+## 19. Decision status
 
-Gate 2 may be promoted into the production decision chain only after:
+**Candidate decision:** Adopt Policy C — Stored Observation Confidence + Independent Freshness, with an independent seven-day stale authorization gate.
 
-1. the manual/source-class/independent-freshness policy is explicitly selected;
-2. the 24-hour half-life is either accepted, rejected, or scoped to an explicitly defined observation class;
-3. the relationship between effective confidence and the seven-day stale state is documented;
-4. the routing authorization invariant is implemented;
-5. production integration tests demonstrate the complete decision path;
-6. the test suite is physically executed and passing;
-7. execution evidence is recorded for the relevant commit;
-8. no regression is introduced into the existing local-first Parking Passport workflow.
+**Production status:** NOT YET AUTHORIZED.
 
-Until all criteria are satisfied, the Gate 2 calculator remains a domain primitive and production continues to use the existing Core 0.1 confidence boundary.
-
-## 18. Decision record
-
-**Current decision:** DO NOT integrate the Gate 2 calculator into `page.tsx` yet.
-
-**Reason:** The calculator is technically coherent as an isolated primitive, but its temporal semantics have not yet been accepted as the authoritative meaning of navigation readiness.
-
-**Next decision required:** Select the semantic model for stored confidence, freshness, and effective navigation readiness, then implement and execute tests against that accepted contract.
+**Next engineering step:** Implement the Contract v2 regression tests only. Do not modify `page.tsx`. Do not unfreeze Gate 3.
