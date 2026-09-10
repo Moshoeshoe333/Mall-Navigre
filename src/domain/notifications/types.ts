@@ -1,55 +1,50 @@
 import { z } from "zod";
 
+export const NotificationTypeSchema = z.enum([
+  "LOW_LOCATION_CONFIDENCE",
+  "OFFLINE_MODE_ACTIVE",
+  "STALE_VENUE_DATA",
+]);
+
 export const NotificationStateSchema = z.enum([
   "active",
   "resolved",
-  "verified",
-  "superseded",
   "unknown",
 ]);
 
-export const NotificationCategorySchema = z.enum([
-  "dependency",
-  "typecheck",
-  "unit_test",
-  "build",
-  "e2e",
-  "infrastructure",
-  "unknown",
+export const NotificationSeveritySchema = z.enum([
+  "info",
+  "warning",
+  "critical",
 ]);
 
-const NotificationEventBaseSchema = z.object({
+export const NotificationSourceSchema = z.enum([
+  "localization",
+  "network",
+  "venue_data",
+  "system",
+]);
+
+export const NotificationEventSchema = z.object({
   id: z.string().min(1),
-  repository: z.string().min(1),
-  workflow: z.string().min(1),
-  runNumber: z.number().int().positive(),
-  commitSha: z.string().regex(/^[0-9a-f]{7,64}$/i).optional(),
-  occurredAt: z.string().datetime(),
-  conclusion: z.enum(["success", "failure", "cancelled", "skipped", "unknown"]),
-  category: NotificationCategorySchema,
+  mallId: z.string().min(1),
+  type: NotificationTypeSchema,
   state: NotificationStateSchema,
-  rootCauseId: z.string().min(1).optional(),
-  correctiveCommitSha: z.string().regex(/^[0-9a-f]{7,64}$/i).optional(),
-  verificationEventId: z.string().min(1).optional(),
-  summary: z.string().max(500).optional(),
+  severity: NotificationSeveritySchema,
+  source: NotificationSourceSchema,
+  occurredAt: z.string().datetime(),
+  updatedAt: z.string().datetime().optional(),
+  message: z.string().min(1).max(500),
+  levelId: z.string().min(1).optional(),
+  parkadeId: z.string().min(1).optional(),
+  nodeId: z.string().min(1).optional(),
+  confidence: z.number().min(0).max(1).optional(),
+  dataVerifiedAt: z.string().datetime().optional(),
+  recoveryAction: z.string().max(300).optional(),
 });
 
-export const NotificationEventSchema = NotificationEventBaseSchema.superRefine((event, ctx) => {
-  if (event.state === "verified" && !event.verificationEventId) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["verificationEventId"],
-      message: "Verified notifications require verification evidence.",
-    });
-  }
-
-  if (event.state === "resolved" && !event.correctiveCommitSha) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["correctiveCommitSha"],
-      message: "Resolved notifications require a corrective commit reference.",
-    });
-  }
-});
-
+export type NotificationType = z.infer<typeof NotificationTypeSchema>;
+export type NotificationState = z.infer<typeof NotificationStateSchema>;
+export type NotificationSeverity = z.infer<typeof NotificationSeveritySchema>;
+export type NotificationSource = z.infer<typeof NotificationSourceSchema>;
 export type NotificationEvent = z.infer<typeof NotificationEventSchema>;
