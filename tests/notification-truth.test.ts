@@ -3,57 +3,109 @@ import { NotificationEventSchema } from "@/domain/notifications/types";
 
 describe("notification truth contracts", () => {
   const base = {
-    id: "ci-26",
-    repository: "Moshoeshoe333/Mall-Navigre",
-    workflow: "Navigre CI",
-    runNumber: 26,
-    commitSha: "26af9b02873406f88e126fa44df8bfbb20beb6a2",
+    id: "notification-1",
+    mallId: "mall-of-africa",
+    state: "active" as const,
+    severity: "warning" as const,
+    source: "localization" as const,
     occurredAt: "2026-09-10T09:00:00.000Z",
-    conclusion: "failure" as const,
-    category: "typecheck" as const,
-    state: "verified" as const,
-    correctiveCommitSha: "a948fa888e29b3ce207b68fa7e0b8e023f3e9327",
-    verificationEventId: "ci-26-verification",
-    summary: "Historical failure subsequently verified by a passing run.",
+    message: "Your location confidence is low.",
+    levelId: "level-4",
+    parkadeId: "parkade-c",
+    nodeId: "p4-entrance-16",
   };
 
-  it("exists as a runtime-validated event", () => {
-    expect(NotificationEventSchema.parse(base).repository).toBe("Moshoeshoe333/Mall-Navigre");
-  });
-
-  it("requires coherent identity and provenance", () => {
-    expect(() => NotificationEventSchema.parse({ ...base, runNumber: 0 })).toThrow();
-    expect(() => NotificationEventSchema.parse({ ...base, commitSha: "not-a-sha" })).toThrow();
-  });
-
-  it("rejects verified events without verification evidence", () => {
-    expect(NotificationEventSchema.safeParse({ ...base, verificationEventId: undefined }).success).toBe(false);
-  });
-
-  it("keeps historical failure separate from successful conclusion", () => {
-    const event = NotificationEventSchema.parse(base);
-    expect(event.conclusion).toBe("failure");
-    expect(event.state).toBe("verified");
-    expect(event.verificationEventId).toBeDefined();
-  });
-
-  it("handles unknown evidence without inventing current truth", () => {
+  it("validates low-location-confidence events", () => {
     const event = NotificationEventSchema.parse({
       ...base,
-      state: "unknown",
-      correctiveCommitSha: undefined,
-      verificationEventId: undefined,
+      type: "LOW_LOCATION_CONFIDENCE",
+      confidence: 0.42,
+      recoveryAction: "Confirm a nearby visual landmark.",
     });
+
+    expect(event.type).toBe("LOW_LOCATION_CONFIDENCE");
+    expect(event.confidence).toBe(0.42);
+  });
+
+  it("validates offline-mode events", () => {
+    const event = NotificationEventSchema.parse({
+      ...base,
+      id: "notification-2",
+      type: "OFFLINE_MODE_ACTIVE",
+      source: "network",
+      severity: "info",
+      message: "Offline mode is active. Saved parking data remains available locally.",
+    });
+
+    expect(event.type).toBe("OFFLINE_MODE_ACTIVE");
+    expect(event.source).toBe("network");
+  });
+
+  it("validates stale-venue-data events with verification provenance", () => {
+    const event = NotificationEventSchema.parse({
+      ...base,
+      id: "notification-3",
+      type: "STALE_VENUE_DATA",
+      source: "venue_data",
+      dataVerifiedAt: "2026-09-01T09:00:00.000Z",
+      message: "Some venue data has not been verified recently.",
+      state: "unknown",
+    });
+
+    expect(event.type).toBe("STALE_VENUE_DATA");
+    expect(event.dataVerifiedAt).toBe("2026-09-01T09:00:00.000Z");
     expect(event.state).toBe("unknown");
   });
 
-  it("rejects resolved events without a corrective commit", () => {
+  it("enforces bounded confidence", () => {
     expect(
       NotificationEventSchema.safeParse({
         ...base,
-        state: "resolved",
-        correctiveCommitSha: undefined,
-        verificationEventId: undefined,
+        type: "LOW_LOCATION_CONFIDENCE",
+        confidence: 1.01,
+      }).success,
+    ).toBe(false);
+
+    expect(
+      NotificationEventSchema.safeParse({
+        ...base,
+        type: "LOW_LOCATION_CONFIDENCE",
+        confidence: -0.01,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects unsupported notification categories and sources", () => {
+    expect(
+      NotificationEventSchema.safeParse({
+        ...base,
+        type: "TYPECHECK_FAILURE",
+      }).success,
+    ).toBe(false);
+
+    expect(
+      NotificationEventSchema.safeParse({
+        ...base,
+        type: "OFFLINE_MODE_ACTIVE",
+        source: "github_ci",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("requires a valid message and timestamp", () => {
+    expect(
+      NotificationEventSchema.safeParse({
+        ...base,
+        type: "OFFLINE_MODE_ACTIVE",
+        message: "",
+      }).success,
+    ).toBe(false);
+
+    expect(
+      NotificationEventSchema.safeParse({
+        ...base,
+        type: "OFFLINE_MODE_ACTIVE",
+        occurredAt: "not-a-date",
       }).success,
     ).toBe(false);
   });
