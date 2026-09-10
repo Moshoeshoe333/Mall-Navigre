@@ -26,13 +26,8 @@ describe("notification truth contracts", () => {
     expect(() => NotificationEventSchema.parse({ ...base, commitSha: "not-a-sha" })).toThrow();
   });
 
-  it("does not allow a verified event without verification evidence", () => {
-    const result = NotificationEventSchema.safeParse({ ...base, verificationEventId: undefined });
-    expect(result.success).toBe(true);
-
-    if (result.success && result.data.state === "verified") {
-      expect(result.data.verificationEventId).toBeDefined();
-    }
+  it("rejects verified events without verification evidence", () => {
+    expect(NotificationEventSchema.safeParse({ ...base, verificationEventId: undefined }).success).toBe(false);
   });
 
   it("keeps historical failure separate from successful conclusion", () => {
@@ -50,5 +45,16 @@ describe("notification truth contracts", () => {
       verificationEventId: undefined,
     });
     expect(event.state).toBe("unknown");
+  });
+
+  it("rejects resolved events without a corrective commit", () => {
+    expect(
+      NotificationEventSchema.safeParse({
+        ...base,
+        state: "resolved",
+        correctiveCommitSha: undefined,
+        verificationEventId: undefined,
+      }).success,
+    ).toBe(false);
   });
 });
