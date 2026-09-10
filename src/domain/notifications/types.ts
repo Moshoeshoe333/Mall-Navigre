@@ -18,7 +18,7 @@ export const NotificationCategorySchema = z.enum([
   "unknown",
 ]);
 
-export const NotificationEventSchema = z.object({
+const NotificationEventBaseSchema = z.object({
   id: z.string().min(1),
   repository: z.string().min(1),
   workflow: z.string().min(1),
@@ -32,6 +32,24 @@ export const NotificationEventSchema = z.object({
   correctiveCommitSha: z.string().regex(/^[0-9a-f]{7,64}$/i).optional(),
   verificationEventId: z.string().min(1).optional(),
   summary: z.string().max(500).optional(),
+});
+
+export const NotificationEventSchema = NotificationEventBaseSchema.superRefine((event, ctx) => {
+  if (event.state === "verified" && !event.verificationEventId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["verificationEventId"],
+      message: "Verified notifications require verification evidence.",
+    });
+  }
+
+  if (event.state === "resolved" && !event.correctiveCommitSha) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["correctiveCommitSha"],
+      message: "Resolved notifications require a corrective commit reference.",
+    });
+  }
 });
 
 export type NotificationEvent = z.infer<typeof NotificationEventSchema>;
