@@ -5,7 +5,7 @@ import { findRoute } from "@/domain/routing/route";
 import { mallOfAfricaGraph } from "@/data/malls/mall-of-africa/graph";
 import { loadActiveParkingSession, saveParkingSession, clearActiveParkingSession, type ParkingLoadResult } from "@/storage/parkingStore";
 import type { ParkingSession } from "@/domain/parking/types";
-import { shouldRequestLandmarkConfirmation } from "@/domain/parking/state";
+import { authorizeParkingRouting } from "@/domain/parking/routing-authorization";
 
 const MALL_ID = "mall-of-africa";
 const START_NODE = "p4-entrance-16";
@@ -73,7 +73,23 @@ export default function Home() {
 
   function routeToCar() {
     if (!session?.landmarkId) return;
-    if (shouldRequestLandmarkConfirmation(session.confidence)) { setMessage("Confidence is low. Confirm a visible parking landmark before navigating."); return; }
+
+    const authorization = authorizeParkingRouting(session);
+    if (!authorization.allowed) {
+      if (authorization.reason === "low_confidence") {
+        setMessage("Confidence is low. Confirm a visible parking landmark before navigating.");
+      } else if (authorization.reason === "stale") {
+        setMessage("This Parking Passport is stale. Confirm your current parking landmark before navigating.");
+      } else if (authorization.reason === "unsupported_source") {
+        setMessage("This location source is not authorized for parking routing yet. Confirm a visible parking landmark.");
+      } else if (authorization.reason === "invalid_confidence") {
+        setMessage("Parking confidence is invalid. Confirm a visible parking landmark before navigating.");
+      } else {
+        setMessage("A valid parking session is required before navigating.");
+      }
+      return;
+    }
+
     const route = findRoute(mallOfAfricaGraph, START_NODE, session.landmarkId);
     if (!route) { setMessage("No usable route is available from this point."); return; }
     setRouteDistance(route.distanceMeters); setRouteVerified(route.verified);
