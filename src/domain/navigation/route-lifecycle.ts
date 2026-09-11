@@ -1,7 +1,16 @@
-export type RouteLifecycleRoute = {
-  mode: "ACTIVE_GUIDANCE" | "UNVERIFIED_PREVIEW" | "FAILED_CLOSED";
-  isGuidanceAllowed: boolean;
-};
+export type RouteLifecycleRoute =
+  | {
+      mode: "ACTIVE_GUIDANCE";
+      isGuidanceAllowed: true;
+    }
+  | {
+      mode: "UNVERIFIED_PREVIEW";
+      isGuidanceAllowed: false;
+    }
+  | {
+      mode: "FAILED_CLOSED";
+      isGuidanceAllowed: false;
+    };
 
 export type RouteInvalidationReason =
   | "ROUTE_NODE_UNAVAILABLE"
@@ -17,7 +26,7 @@ export type RouteFailureReason = "NO_USABLE_ROUTE" | "CALCULATION_REJECTED";
 export type RouteLifecycleState =
   | { status: "EMPTY" }
   | { status: "CALCULATING"; calculationId: string }
-  | { status: "ACTIVE"; calculationId: string; route: RouteLifecycleRoute }
+  | { status: "ACTIVE"; calculationId: string; route: Exclude<RouteLifecycleRoute, { mode: "FAILED_CLOSED" }> }
   | { status: "INVALIDATED"; reason: RouteInvalidationReason }
   | { status: "RE_ROUTING"; calculationId: string; reason: RouteInvalidationReason }
   | { status: "FAILED_CLOSED"; reason: RouteFailureReason };
@@ -28,8 +37,8 @@ const EMPTY: RouteLifecycleState = { status: "EMPTY" };
  * Temporal boundary for a route decision.
  *
  * This class owns lifecycle state only. It does not calculate routes, mutate
- * graph state, or depend on the presentation module. The broader presentation
- * model can satisfy RouteLifecycleRoute structurally at the integration seam.
+ * graph state, or depend on the presentation module. The route contract binds
+ * presentation mode to guidance capability at the type level.
  */
 export class RouteLifecycle {
   private stateValue: RouteLifecycleState = EMPTY;
@@ -39,7 +48,7 @@ export class RouteLifecycle {
     return this.stateValue;
   }
 
-  get currentRoute(): RouteLifecycleRoute | null {
+  get currentRoute(): Exclude<RouteLifecycleRoute, { mode: "FAILED_CLOSED" }> | null {
     return this.stateValue.status === "ACTIVE" ? this.stateValue.route : null;
   }
 
@@ -96,7 +105,9 @@ export class RouteLifecycle {
   }
 
   private isCurrentCalculation(calculationId: string): boolean {
-    return (this.stateValue.status === "CALCULATING" || this.stateValue.status === "RE_ROUTING") &&
-      this.stateValue.calculationId === calculationId;
+    return (
+      (this.stateValue.status === "CALCULATING" || this.stateValue.status === "RE_ROUTING") &&
+      this.stateValue.calculationId === calculationId
+    );
   }
 }
