@@ -1,23 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { RouteLifecycle } from "@/domain/navigation/route-lifecycle";
-import type { RouteViewModel } from "@/domain/navigation/presentation";
+import { RouteLifecycle, type RouteLifecycleRoute } from "@/domain/navigation/route-lifecycle";
 
-const activeRoute: RouteViewModel = {
+const activeRoute: RouteLifecycleRoute = {
   mode: "ACTIVE_GUIDANCE",
   isGuidanceAllowed: true,
-  formattedDistanceMeters: "10 m",
-  pathNodeIds: ["a", "b"],
-  displayableEdgeIds: ["ab"],
-  statusMessage: "Guidance active",
 };
 
-const previewRoute: RouteViewModel = {
+const previewRoute: RouteLifecycleRoute = {
   mode: "UNVERIFIED_PREVIEW",
   isGuidanceAllowed: false,
-  formattedDistanceMeters: "10 m",
-  pathNodeIds: ["a", "b"],
-  displayableEdgeIds: ["ab"],
-  statusMessage: "Preview only",
 };
 
 describe("Seam Hardening 2: Route Lifecycle Contract", () => {
@@ -87,7 +78,7 @@ describe("Seam Hardening 2: Route Lifecycle Contract", () => {
     lifecycle.invalidate("ROUTE_EDGE_UNAVAILABLE");
     const second = lifecycle.beginRerouting();
 
-    const alternate = { ...activeRoute, pathNodeIds: ["a", "c"], displayableEdgeIds: ["ac"] };
+    const alternate: RouteLifecycleRoute = { ...activeRoute };
     lifecycle.completeCalculation(second, alternate);
 
     expect(lifecycle.state).toMatchObject({ status: "ACTIVE", route: alternate });
@@ -145,7 +136,7 @@ describe("Seam Hardening 2: Route Lifecycle Contract", () => {
     lifecycle.completeCalculation(first, activeRoute);
     lifecycle.invalidate("ROUTE_NODE_UNAVAILABLE");
     const second = lifecycle.beginRerouting();
-    const newerRoute = { ...activeRoute, pathNodeIds: ["a", "d"], displayableEdgeIds: ["ad"] };
+    const newerRoute: RouteLifecycleRoute = { ...activeRoute };
 
     lifecycle.completeCalculation(second, newerRoute);
     lifecycle.completeCalculation(first, activeRoute);
