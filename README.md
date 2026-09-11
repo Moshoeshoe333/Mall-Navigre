@@ -14,25 +14,29 @@ The sieve is an audit lens, not a list of 99 features. No claim may exceed its s
 
 ## Current project state — 2026-09-11
 
-**Repository HEAD:** `232ea9cb633c5b52634d89392fc17872cee044cc`
+**Current repository HEAD:** `ddce04f48ddb0531855c5486def04268fa3a6c4c`
 
-**Overall:** Core 0.1 foundation established; Core 0.2 truth-hardening is active. Current-head execution evidence is being reconstructed deliberately rather than inherited from older commits.
+**Code-under-test commit:** `4a1c0e72e83fe8a823f39145550540397f6ab74e`
+
+**Overall:** Core 0.1 foundation established. Core 0.2 truth-hardening is active. Pass 7 has now executed successfully at L4 on the code-under-test commit. Gate 2 remains deliberately unintegrated until the candidate contract is accepted and the smallest policy-owned authorization boundary is implemented.
 
 | Area | State | Evidence ceiling |
 |---|---|---:|
-| Core 0.1 Parking Truth architecture | 🟢 | L2/L3 current; historical L4/L5 at `8a956e...` |
-| Local-first persistence | 🟢 | L2 |
-| Deterministic A* routing | 🟢 | L2 |
+| Core 0.1 Parking Truth | 🟢 | L4 current browser execution; L5 Gate 2 not claimed |
+| Local-first persistence | 🟢 | L4 current browser truth workflow |
+| Deterministic A* routing | 🟢 | L4 current browser truth workflow |
 | Graph integrity | 🟡 | L2; strict taxonomy reconciliation pending |
-| Gate 2 confidence | 🟡 | L1 contract candidate / L2 calculator / L3 tests |
+| Gate 2 confidence contract | 🟡 | L1 candidate |
+| Gate 2 calculator | 🟡 | L2 experimental / L4 tests |
+| Gate 2 Policy C regression | 🟢 | L4 — 13 tests passed |
 | Gate 2 production integration | 🔴 blocked | Not established |
 | Real Mall of Africa geometry | 🟡 | L1 schematic/unverified |
 | Localization / sensors | 🟡 | L2 interfaces only |
-| Accessibility verification | 🟡 | Partial; execution evidence pending |
+| Accessibility verification | 🟡 | Partial |
 | Multi-mall | 🟡 | Partial architecture, runtime proof pending |
 | Gate 3 concurrency | 🔒 frozen | L1 |
 
-See [`docs/MASTER-EVIDENCE-LEDGER.md`](docs/MASTER-EVIDENCE-LEDGER.md) for the current ledger.
+See [`docs/MASTER-EVIDENCE-LEDGER.md`](docs/MASTER-EVIDENCE-LEDGER.md) for the detailed evidence record.
 
 ### Evidence levels
 
@@ -66,11 +70,18 @@ Core principles:
 - Temporarily unavailable infrastructure is never routable.
 - Correctness comes before optimization; measured performance earns complexity.
 
-### Historical verification boundary
+### Current execution evidence
 
-The original Core 0.1 baseline was verified at commit `8a956e7510ab2730fdba9d131e3959fb9a679ad0`, including the documented Parking Truth E2E evidence. Those results are historical evidence and are **not automatically evidence for later commits**.
+On code-under-test commit `4a1c0e72e83fe8a823f39145550540397f6ab74e`:
 
-Current HEAD must earn its own L4/L5 status through execution.
+- `npm ci` — PASS
+- `npm run typecheck` — PASS
+- `npm test` — PASS: **8 files / 66 tests**
+- Parking Truth production build — PASS
+- Next.js start/wait — PASS
+- Browser Truth Test — PASS
+
+The previous Core 0.1 evidence at `8a956e...` remains historical and is not silently transferred to later code.
 
 ---
 
@@ -82,7 +93,7 @@ Graph foundation and deterministic routing are implemented. A reconciliation pas
 
 ### Gate 2 — Confidence formalization
 
-Gate 2 Contract v2 is a **candidate** decision, not yet production authority. It adopts:
+Gate 2 Contract v2 is a **candidate** decision, not yet production authority. The candidate model is:
 
 - **Policy C:** stored observation confidence + independent freshness;
 - persisted confidence is not silently decayed by elapsed time;
@@ -96,7 +107,19 @@ Gate 2 Contract v2 is a **candidate** decision, not yet production authority. It
 - `RouteResult.verified` remains independent;
 - the experimental 24-hour half-life calculator is not production routing authority.
 
-**Gate 2 production integration is not authorized yet.** `page.tsx` remains untouched until the contract is accepted and the regression suite has executed successfully.
+### Pass 7 — Regression execution
+
+Pass 7 added a dedicated parking freshness/compatibility regression suite and hardened the existing freshness boundary so that:
+
+- exactly seven days is stale;
+- future observation timestamps are non-authorizing;
+- invalid temporal data fails closed;
+- `updatedAt` takes precedence;
+- stored confidence is not mutated by freshness evaluation.
+
+The exact code-under-test commit passed the full CI unit/typecheck workflow and the existing browser Parking Truth workflow. This is **L4 evidence**, not L5 Gate 2 integration.
+
+**Gate 2 production integration remains blocked.** `page.tsx` has not been replaced with the experimental calculator path.
 
 ### Gate 3 — Concurrency
 
@@ -106,11 +129,11 @@ Gate 2 Contract v2 is a **candidate** decision, not yet production authority. It
 
 ## Next controlled sequence
 
-1. Accept, reject, or amend Gate 2 Contract v2.
-2. Complete Pass 7 Contract v2 regression tests.
-3. Execute the exact commit locally/through CI and record L4 evidence.
-4. Introduce the smallest policy-owned routing authorization boundary.
-5. Integrate only after policy tests pass.
+1. Explicitly accept, reject, or amend Gate 2 Contract v2.
+2. Preserve the L4 Pass 7 evidence.
+3. Implement the smallest policy-owned routing authorization boundary required by the accepted contract.
+4. Add decision-chain tests around confidence + freshness + graph/route constraints.
+5. Integrate only after those tests pass.
 6. Re-run offline Save → Reload → Find at browser level.
 7. Record L5 integration evidence.
 8. Reconcile and harden Gate 1.
@@ -120,7 +143,7 @@ Gate 2 Contract v2 is a **candidate** decision, not yet production authority. It
 
 - wire the experimental calculator into production prematurely;
 - replace stored confidence semantics by inference;
-- claim current CI green without a current run;
+- claim L5 from L4 execution alone;
 - claim survey-grade or exact-bay positioning;
 - unfreeze Gate 3.
 
