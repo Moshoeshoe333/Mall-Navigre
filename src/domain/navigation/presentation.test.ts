@@ -45,7 +45,12 @@ describe("Seam Hardening 1: Route Presentation Contract", () => {
   });
 
   it("contains an unverified route as a preview with guidance disabled", () => {
-    const vm = createRouteViewModel({ session, routeResult: route(false), graph, now });
+    const unverifiedGraph: MallGraph = {
+      ...graph,
+      nodes: graph.nodes.map((node) => ({ ...node, status: "unverified" })),
+      edges: graph.edges.map((edge) => ({ ...edge, status: "unverified" })),
+    };
+    const vm = createRouteViewModel({ session, routeResult: route(false), graph: unverifiedGraph, now });
     expect(vm.mode).toBe("UNVERIFIED_PREVIEW");
     expect(vm.isGuidanceAllowed).toBe(false);
     expect(vm.displayableEdgeIds).toEqual(["edge-1"]);
