@@ -102,14 +102,14 @@ describe("Seam Hardening 2: Route Lifecycle Contract", () => {
     expect(lifecycle.currentRoute).toBeNull();
   });
 
-  it("rejects a late result from an older calculation generation", () => {
+  it("rejects a late result from an older calculation generation after legitimate invalidation", () => {
     const lifecycle = new RouteLifecycle();
     const first = lifecycle.beginCalculation();
+    lifecycle.completeCalculation(first, activeRoute);
     lifecycle.invalidate("PARKING_SESSION_STALE");
     const second = lifecycle.beginRerouting();
 
-    lifecycle.completeCalculation(first, activeRoute);
-
+    expect(lifecycle.completeCalculation(first, activeRoute)).toBe(false);
     expect(lifecycle.state).toEqual({
       status: "RE_ROUTING",
       calculationId: second,
@@ -118,12 +118,27 @@ describe("Seam Hardening 2: Route Lifecycle Contract", () => {
     expect(lifecycle.currentRoute).toBeNull();
   });
 
+  it("rejects a slower older calculation when a newer generation finishes first", () => {
+    const lifecycle = new RouteLifecycle();
+    const first = lifecycle.beginCalculation();
+    const second = lifecycle.beginCalculation();
+
+    expect(lifecycle.completeCalculation(second, activeRoute)).toBe(true);
+    expect(lifecycle.completeCalculation(first, previewRoute)).toBe(false);
+
+    expect(lifecycle.state).toEqual({
+      status: "ACTIVE",
+      calculationId: second,
+      route: activeRoute,
+    });
+  });
+
   it("cannot resurrect a cleared route with a late calculation result", () => {
     const lifecycle = new RouteLifecycle();
     const token = lifecycle.beginCalculation();
     lifecycle.clear();
 
-    lifecycle.completeCalculation(token, activeRoute);
+    expect(lifecycle.completeCalculation(token, activeRoute)).toBe(false);
 
     expect(lifecycle.state).toEqual({ status: "EMPTY" });
     expect(lifecycle.currentRoute).toBeNull();
@@ -139,7 +154,7 @@ describe("Seam Hardening 2: Route Lifecycle Contract", () => {
     const newerRoute: RouteLifecycleRoute = { ...activeRoute };
 
     lifecycle.completeCalculation(second, newerRoute);
-    lifecycle.completeCalculation(first, activeRoute);
+    expect(lifecycle.completeCalculation(first, activeRoute)).toBe(false);
 
     expect(lifecycle.state).toMatchObject({ status: "ACTIVE", route: newerRoute });
   });
