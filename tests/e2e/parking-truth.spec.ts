@@ -16,7 +16,50 @@ test("Parking Truth Test: Save -> Reload -> Recover -> Offline -> Route", async 
   await expect(page.locator(".status")).toContainText("Offline");
   await page.locator("#find-my-car").click();
   await expect(page.locator("#navigation-route")).toBeVisible();
-  await expect(page.locator("#navigation-route")).toContainText("unverified geometry");
+  await expect(page.locator("#navigation-route")).toContainText("Preview only");
+  await expect(page.locator("body")).toContainText("Displaying schematic preview. Turn-by-turn guidance disabled.");
+  await expect(page.locator("#navigation-route")).not.toContainText("Guidance active");
+});
+
+test("Route presentation fails closed when parking authorization rejects the session", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#hydration-skeleton")).toBeHidden();
+
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open("mall-navigre", 2);
+      request.onsuccess = () => {
+        const db = request.result;
+        try {
+          const tx = db.transaction("parking-sessions", "readwrite");
+          tx.objectStore("parking-sessions").put({
+            id: "low-confidence-session",
+            mallId: "mall-of-africa",
+            parkadeId: "parkade-c",
+            levelId: "mofa-parking-4",
+            landmarkId: "p4-start",
+            capturedAt: new Date().toISOString(),
+            source: "manual",
+            confidence: 0.49,
+          }, "active");
+          tx.oncomplete = () => { db.close(); resolve(); };
+          tx.onerror = () => { db.close(); reject(tx.error ?? new Error("Session write failed")); };
+          tx.onabort = () => { db.close(); reject(tx.error ?? new Error("Session write aborted")); };
+        } catch (error) {
+          db.close();
+          reject(error instanceof Error ? error : new Error("Session write failed"));
+        }
+      };
+      request.onerror = () => reject(request.error ?? new Error("Database open failed"));
+      request.onblocked = () => reject(new Error("Database open was blocked"));
+    });
+  });
+
+  await page.reload();
+  await expect(page.locator("#hydration-skeleton")).toBeHidden();
+  await page.locator("#find-my-car").click();
+  await expect(page.locator("#navigation-route")).toHaveCount(0);
+  await expect(page.locator("body")).toContainText("Navigation is unavailable until the saved parking session is eligible.");
 });
 
 test("Parking Truth Test: corrupted persisted state fails closed", async ({ page }) => {
