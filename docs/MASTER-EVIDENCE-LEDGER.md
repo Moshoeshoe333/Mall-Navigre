@@ -1,8 +1,8 @@
 # NAVIGRE 2 — Master Evidence Ledger
 
 **Audit date:** 2026-09-11  
-**Repository:** `Moshoeshoe333/Mall-Navigre`  
-**Audited HEAD:** `230b57c06e9049df4b34f13b7377ff7ba6a72735`  
+**Code-under-test commit:** `4a1c0e72e83fe8a823f39145550540397f6ab74e`  
+**Current branch:** `main`  
 **Governing rule:** NO CLAIM ABOVE ITS EVIDENCE LEVEL.  
 **Gate 3:** FROZEN.
 
@@ -24,18 +24,18 @@
 
 | Area | Highest justified level | Classification | Evidence / next action |
 |---|---:|---|---|
-| Core 0.1 Parking Passport | L2/L3 | Strength / evidence reconstruction | Historical L4/L5 evidence exists at `8a956e7510ab2730fdba9d131e3959fb9a679ad0`; current HEAD requires re-execution before any current L4/L5 claim. |
-| IndexedDB local-first persistence | L2 | Strength | Canonical save/load path exists. Re-run offline Save → Reload → Find for current-head evidence. |
-| Canonical ParkingSession confidence | L2 | Strength | Bounded stored observation confidence remains the canonical persisted field. |
-| Core 0.1 confidence boundary | L2/L3 | Compatibility boundary | `<0.50` requests landmark confirmation; exact `0.50` remains eligible. Current execution evidence must be reconstructed. |
-| Gate 2 calculator | L2 | Experimental primitive | Source-weight/24h-decay calculator exists. It is not production authority. |
-| Gate 2 calculator tests | L3 | Test artifact | Existing tests cover weights, decay, timestamps, bounds and threshold. They must execute on the current accepted commit. |
-| Gate 2 Contract v2 | L1 | Candidate decision | Policy C + independent seven-day freshness gate is documented but requires explicit project acceptance before promotion. |
-| Gate 2 Policy C regression suite | L3 | Active work | Pass 7 adds non-mutation, seven-day boundary, future/invalid temporal behavior, updatedAt precedence and Core 0.1 compatibility checks. |
-| Gate 2 production integration | Unestablished | Integration gap | Do not edit `page.tsx` until contract acceptance + regression execution evidence. |
-| Seven-day stale state | L2 | Domain seam | `getParkingState()` implements `updatedAt ?? capturedAt` and seven-day boundary; routing consumption remains unproven. |
+| Core 0.1 Parking Passport | L4/L5 historical + current E2E L4 | Strength / evidence | Current commit `4a1c0e7` passed CI unit/typecheck and the Parking Truth browser workflow. Integrated production semantics remain intentionally unchanged. |
+| IndexedDB local-first persistence | L2 | Strength | Persistence implementation exists; current browser workflow passed the existing truth test. Gate 2 integration remains separate. |
+| Canonical ParkingSession confidence | L2 | Strength | Bounded stored observation confidence remains canonical persisted data. |
+| Core 0.1 confidence boundary | L2/L4 | Compatibility boundary | `<0.50` requests landmark confirmation; exact `0.50` remains eligible. Regression suite executed successfully. |
+| Gate 2 calculator | L2 | Experimental primitive | Source-weight/24h-decay calculator exists. It remains outside production authorization. |
+| Gate 2 calculator tests | L4 | Executed | 30 calculator tests passed in the exact-commit CI run. |
+| Gate 2 Contract v2 | L1 | Candidate decision | Policy C + independent seven-day freshness gate remains candidate until explicitly accepted. |
+| Gate 2 Policy C regression suite | L4 | **Pass 7 executed** | 13 new freshness/compatibility tests passed in the exact-commit CI run. |
+| Gate 2 production integration | Unestablished | Integration gap | `page.tsx` remains untouched. Do not integrate until contract acceptance and policy-owned authorization boundary are established. |
+| Seven-day stale state | L4 | Hardened seam | Exact seven-day boundary, invalid timestamp fail-closed, future timestamp non-authorizing, and `updatedAt` precedence are now regression-tested and passed. |
 | Graph integrity | L2 | Reconciliation required | Existing validator is implemented, but strict later taxonomy is not established. Reconcile before changing it. |
-| Deterministic routing | L2 | Strength | A* routing and route result verification remain separate from parking confidence. |
+| Deterministic routing | L2/L4 historical | Strength | A* routing remains separate from parking confidence; current browser truth workflow passed. |
 | Localization | L2 interface | Capability gap | GPS/BLE/Wi-Fi are abstractions, not operational indoor positioning. |
 | Accessibility | L2 partial | Verification gap | Automated keyboard/screen-reader verification remains outstanding. |
 | Sensors | L2 abstraction | Capability gap | No physical sensor deployment evidence. |
@@ -44,57 +44,47 @@
 | Multi-mall | L2 partial | Capability gap | Architecture seams exist; multi-mall runtime proof remains outstanding. |
 | Gate 3 concurrency | L1 | **FROZEN** | No multi-tab concurrency implementation until Gates 1 and 2 are resolved. |
 | Real Mall of Africa truth | L1 | Operational gap | Schematic geometry is not physical validation. Requires verified data and field walkthrough evidence. |
-| Dependency reproducibility | L2 | Strength | Current package versions are exact; no loose `^`/`latest` dependency ranges in the audited package manifest. |
+| Dependency reproducibility | L2/L4 | Strength | `npm ci` succeeded and exact dependency versions remain in use. CI reported 0 vulnerabilities during install. |
 
-## Gate 2 current decision
+## Pass 7 execution evidence
 
-**Candidate:** Policy C — Stored Observation Confidence + Independent Freshness, with an independent seven-day stale authorization gate.
+Exact code-under-test commit: `4a1c0e72e83fe8a823f39145550540397f6ab74e`
 
-Rules under the candidate contract:
+**Navigre CI run:** `34582998639`
 
-- persisted `ParkingSession.confidence` is not silently decayed by time;
-- manual confidence remains unchanged at 24h and 48h;
-- freshness is evaluated separately from stored confidence;
-- `updatedAt ?? capturedAt` is the temporal reference;
-- age `< 7 days` passes the stale-state gate when temporal data is valid;
-- age `>= 7 days` requires visible landmark confirmation;
-- invalid temporal evidence fails closed;
-- GPS alone cannot satisfy the `0.50` boundary under the declared experimental source policy;
-- `visual` remains fail closed until explicitly authorized;
-- `RouteResult.verified` remains independent;
-- the experimental 24-hour half-life calculator is not production routing authority.
+- `npm ci` — PASS
+- `npm run typecheck` — PASS
+- `npm test` — PASS
+- 8 test files passed
+- 66 tests passed
+- Gate 2 calculator suite — 30 tests passed
+- Gate 2 freshness/compatibility suite — 13 tests passed
 
-These are contract-candidate semantics until accepted and implemented.
+**Parking Truth Test run:** `34582998658`
 
-## Pass 7 acceptance-test ledger
+- production build — PASS
+- Next.js start — PASS
+- application wait — PASS
+- Browser Truth Test — PASS
+- Playwright report upload — PASS
 
-The regression suite must establish, at minimum:
+This establishes **L4 execution evidence for commit `4a1c0e7`**. It does not establish L5 Gate 2 integration because the new policy has not been wired into the production routing path.
 
-1. stored confidence remains bounded in `[0,1]`;
-2. freshness evaluation does not mutate stored confidence;
-3. manual confidence is unchanged at 24h and 48h;
-4. `<0.50` requests landmark confirmation;
-5. exact `0.50` remains eligible;
-6. NaN and infinities fail closed;
-7. `<7 days` is not stale;
-8. `>=7 days` is stale;
-9. invalid timestamps are stale/non-authorizing;
-10. future timestamps do not create freshness authorization;
-11. `updatedAt` takes precedence;
-12. a newer update refreshes freshness without changing confidence;
-13. visual remains fail closed;
-14. GPS remains below the confidence boundary;
-15. parking confidence remains distinct from route verification;
-16. existing Core 0.1 behavior remains compatible below seven days.
+## Change made during Pass 7
 
-## Execution gate
+`src/domain/parking/state.ts` was hardened to match the candidate Gate 2 freshness contract:
 
-After Pass 7 code is committed:
+- exactly seven days is stale (`>= 7 days`);
+- invalid current/observation time is stale;
+- future observation timestamps are stale/non-authorizing;
+- `updatedAt ?? capturedAt` remains authoritative for freshness.
 
-- **L3** may be claimed when the regression artifacts exist.
-- **L4** may be claimed only after the exact commit's tests physically execute and pass.
-- **L5** remains blocked until persistence/routing/UI integration is executed together.
-- **L6** remains blocked until real-world/release evidence exists.
+This is a bounded domain change, not production Gate 2 routing integration.
 
-**Next permitted step after L4:** implement the smallest policy-owned routing-authorization boundary.  
-**Forbidden until then:** replacing the production `page.tsx` confidence path; unfreezing Gate 3; claiming operational indoor positioning.
+## Decision
+
+Pass 7 is **executed successfully at L4**. Gate 2 remains **not production-authorized**.
+
+The next controlled step is to resolve explicit acceptance of Contract v2, then implement the smallest policy-owned routing authorization boundary without conflating stored confidence, freshness, and `RouteResult.verified`.
+
+**Gate 3 remains frozen.**
