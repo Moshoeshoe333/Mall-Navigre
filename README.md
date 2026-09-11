@@ -14,22 +14,23 @@ The sieve is an audit lens, not a list of 99 features. No claim may exceed its s
 
 ## Current project state — 2026-09-11
 
-**Current repository HEAD:** `ddce04f48ddb0531855c5486def04268fa3a6c4c`
+**Current repository HEAD:** `9af8249e499b3545d9f1b948e1797545ed2c7847`
 
-**Code-under-test commit:** `4a1c0e72e83fe8a823f39145550540397f6ab74e`
+**Current automated evidence:** CI and the Parking Truth browser workflow both pass against the exact current head.
 
-**Overall:** Core 0.1 foundation established. Core 0.2 truth-hardening is active. Pass 7 has now executed successfully at L4 on the code-under-test commit. Gate 2 remains deliberately unintegrated until the candidate contract is accepted and the smallest policy-owned authorization boundary is implemented.
+**Overall:** Core 0.1 foundation is established. Core 0.2 truth-hardening is active. Gate 2 authorization is implemented and executed at L4. Gate 2 L5 remains deliberately unclaimed pending a dedicated decision-chain integration test.
 
 | Area | State | Evidence ceiling |
 |---|---|---:|
-| Core 0.1 Parking Truth | 🟢 | L4 current browser execution; L5 Gate 2 not claimed |
+| Core 0.1 Parking Truth | 🟢 | L4 current browser execution |
 | Local-first persistence | 🟢 | L4 current browser truth workflow |
 | Deterministic A* routing | 🟢 | L4 current browser truth workflow |
 | Graph integrity | 🟡 | L2; strict taxonomy reconciliation pending |
-| Gate 2 confidence contract | 🟡 | L1 candidate |
+| Gate 2 confidence contract | 🟡 | L1 candidate governance decision |
 | Gate 2 calculator | 🟡 | L2 experimental / L4 tests |
-| Gate 2 Policy C regression | 🟢 | L4 — 13 tests passed |
-| Gate 2 production integration | 🔴 blocked | Not established |
+| Gate 2 regression | 🟢 | L4 — current CI: 10 files / 88 tests |
+| Gate 2 authorization | 🟢 | L4 — current CI + browser path |
+| Gate 2 L5 integration | 🟡 | Not claimed; decision-chain test pending |
 | Real Mall of Africa geometry | 🟡 | L1 schematic/unverified |
 | Localization / sensors | 🟡 | L2 interfaces only |
 | Accessibility verification | 🟡 | Partial |
@@ -72,11 +73,11 @@ Core principles:
 
 ### Current execution evidence
 
-On code-under-test commit `4a1c0e72e83fe8a823f39145550540397f6ab74e`:
+On current head `9af8249e499b3545d9f1b948e1797545ed2c7847`:
 
 - `npm ci` — PASS
 - `npm run typecheck` — PASS
-- `npm test` — PASS: **8 files / 66 tests**
+- `npm test` — PASS: **10 files / 88 tests**
 - Parking Truth production build — PASS
 - Next.js start/wait — PASS
 - Browser Truth Test — PASS
@@ -93,33 +94,40 @@ Graph foundation and deterministic routing are implemented. A reconciliation pas
 
 ### Gate 2 — Confidence formalization
 
-Gate 2 Contract v2 is a **candidate** decision, not yet production authority. The candidate model is:
+The repository separates **stored observation confidence** from **freshness**. The experimental 24-hour half-life calculator is not production routing authority.
 
-- **Policy C:** stored observation confidence + independent freshness;
-- persisted confidence is not silently decayed by elapsed time;
-- manual confidence remains unchanged at 24h and 48h;
-- freshness uses `updatedAt ?? capturedAt`;
-- `< 7 days` is not stale when temporal evidence is valid;
-- `>= 7 days` requires visible landmark confirmation;
-- invalid temporal evidence fails closed;
-- GPS alone cannot satisfy the `0.50` confidence boundary under the declared policy;
-- `visual` remains fail closed until explicitly authorized;
-- `RouteResult.verified` remains independent;
-- the experimental 24-hour half-life calculator is not production routing authority.
+The current policy-owned authorization boundary evaluates:
 
-### Pass 7 — Regression execution
+- missing session → reject;
+- invalid confidence → reject;
+- `visual` source → fail closed;
+- GPS alone → reject as independent authority;
+- confidence `< 0.50` → reject / request confirmation;
+- stale, invalid, or future temporal evidence → reject;
+- otherwise → eligible.
 
-Pass 7 added a dedicated parking freshness/compatibility regression suite and hardened the existing freshness boundary so that:
+The boundary does not mutate the persisted `ParkingSession` and does not conflate authorization with `RouteResult.verified`.
 
-- exactly seven days is stale;
-- future observation timestamps are non-authorizing;
-- invalid temporal data fails closed;
-- `updatedAt` takes precedence;
-- stored confidence is not mutated by freshness evaluation.
+### Current Gate 2 regression evidence
 
-The exact code-under-test commit passed the full CI unit/typecheck workflow and the existing browser Parking Truth workflow. This is **L4 evidence**, not L5 Gate 2 integration.
+The current head CI run passed:
 
-**Gate 2 production integration remains blocked.** `page.tsx` has not been replaced with the experimental calculator path.
+- 10 test files;
+- 88 tests;
+- 30 calculator tests;
+- 9 confidence-regression tests;
+- 13 freshness/state tests;
+- 13 routing-authorization tests.
+
+The dedicated regression suite covers stored-confidence preservation, exact `0.50` eligibility, low-confidence rejection, seven-day staleness, GPS/visual fail-closed behavior, invalid/future timestamps, and separation of experimental decay from production authorization.
+
+### Production path
+
+The current production flow is:
+
+`stored ParkingSession → policy authorization → deterministic A* route → RouteResult.verified → UI`
+
+This is executed successfully within the current CI/browser scope. It is **not yet promoted to L5** because the project ledger requires a dedicated adjacent-system decision-chain artifact before making that claim.
 
 ### Gate 3 — Concurrency
 
@@ -129,15 +137,13 @@ The exact code-under-test commit passed the full CI unit/typecheck workflow and 
 
 ## Next controlled sequence
 
-1. Explicitly accept, reject, or amend Gate 2 Contract v2.
-2. Preserve the L4 Pass 7 evidence.
-3. Implement the smallest policy-owned routing authorization boundary required by the accepted contract.
-4. Add decision-chain tests around confidence + freshness + graph/route constraints.
-5. Integrate only after those tests pass.
-6. Re-run offline Save → Reload → Find at browser level.
-7. Record L5 integration evidence.
-8. Reconcile and harden Gate 1.
-9. Validate physical Mall of Africa truth before claiming operational indoor navigation.
+1. Add the smallest decision-chain integration test:
+   `ParkingSession → freshness/state → authorization → findRoute → RouteResult.verified`.
+2. Explicitly assert that authorization and route verification remain independent.
+3. Execute the new test on CI at a new exact head.
+4. Reassess Gate 2 L5 using the evidence ledger — without promoting beyond what the artifact proves.
+5. Reconcile and harden Gate 1.
+6. Validate physical Mall of Africa truth before claiming operational indoor navigation.
 
 **Do not:**
 
@@ -204,6 +210,8 @@ All gates must pass before merging to main.
 ## Dependencies
 
 The audited package manifest uses exact dependency versions rather than loose `^` or `latest` ranges. Dependency pinning is therefore currently a **strength to preserve**, not an active defect.
+
+CI currently reports an eslint support warning and runner/action Node.js deprecation warnings. These are maintenance signals, not correctness failures, and should be handled separately from Gate 2.
 
 ## License
 
