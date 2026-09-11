@@ -35,6 +35,10 @@ function empty(reason: string, statusMessage: string): RouteViewModel {
 /**
  * Single presentation boundary between routing/policy state and the UI.
  * The UI must consume this model rather than raw RouteResult objects.
+ *
+ * Unverified graph elements may be displayed only as schematic preview.
+ * Temporarily unavailable elements are never displayable. Verified routes
+ * additionally require every traversed node and edge to be active.
  */
 export function createRouteViewModel(params: {
   session: ParkingSession | null;
@@ -60,10 +64,17 @@ export function createRouteViewModel(params: {
 
   const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
   const edges = new Map(graph.edges.map((edge) => [edge.id, edge]));
-  const activeEdges = routeResult.edgeIds.every((id) => edges.get(id)?.status === "active");
-  const activeNodes = routeResult.nodeIds.every((id) => nodes.get(id)?.status === "active");
+  const routeEdges = routeResult.edgeIds.map((id) => edges.get(id));
+  const routeNodes = routeResult.nodeIds.map((id) => nodes.get(id));
 
-  if (!activeEdges || !activeNodes) {
+  if (routeEdges.some((edge) => !edge) || routeNodes.some((node) => !node)) {
+    return empty("unusable_route", "The route contains an unknown map element and cannot be presented.");
+  }
+
+  if (
+    routeEdges.some((edge) => edge!.status === "temporarily_unavailable") ||
+    routeNodes.some((node) => node!.status === "temporarily_unavailable")
+  ) {
     return empty("unusable_route", "The route became unavailable and cannot be presented for navigation.");
   }
 
@@ -79,6 +90,12 @@ export function createRouteViewModel(params: {
       displayableEdgeIds,
       statusMessage: "Displaying schematic preview. Turn-by-turn guidance disabled.",
     };
+  }
+
+  const activeEdges = routeEdges.every((edge) => edge!.status === "active");
+  const activeNodes = routeNodes.every((node) => node!.status === "active");
+  if (!activeEdges || !activeNodes) {
+    return empty("unusable_route", "The verified route contains unverified map elements and cannot be presented for navigation.");
   }
 
   return {
