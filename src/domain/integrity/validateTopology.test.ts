@@ -87,12 +87,13 @@ describe("Gate 1 topology reconciliation", () => {
       nodes: [
         ...mallOfAfricaGraph.nodes,
         { ...mallOfAfricaGraph.nodes[1], id: "p3-corridor", levelId: "mofa-parking-3", type: "corridor" as const, status: "active" as const },
+        { ...mallOfAfricaGraph.nodes[3], id: "p4-active-lift", status: "active" as const },
       ],
       edges: [
         ...mallOfAfricaGraph.edges,
         {
           id: "e-valid-level-transition",
-          fromNodeId: "p4-lift",
+          fromNodeId: "p4-active-lift",
           toNodeId: "p3-corridor",
           distanceMeters: 12,
           accessible: true,
@@ -118,6 +119,7 @@ describe("Gate 1 topology reconciliation", () => {
       ],
       nodes: [
         ...mallOfAfricaGraph.nodes,
+        { ...mallOfAfricaGraph.nodes[0], id: "p4-active-start", status: "active" as const },
         { ...mallOfAfricaGraph.nodes[1], id: "p3-corridor", levelId: "mofa-parking-3", type: "corridor" as const, status: "active" as const },
       ],
     };
@@ -142,13 +144,14 @@ describe("Gate 1 topology reconciliation", () => {
       ],
       nodes: [
         ...mallOfAfricaGraph.nodes,
+        { ...mallOfAfricaGraph.nodes[0], id: "p4-active-start", status: "active" as const },
         { ...mallOfAfricaGraph.nodes[1], id: "p3-corridor", levelId: "mofa-parking-3", type: "corridor" as const, status: "active" as const },
       ],
       edges: [
         ...mallOfAfricaGraph.edges,
         {
           id: "e-unavailable-level-transition",
-          fromNodeId: "p4-lift",
+          fromNodeId: "p4-active-start",
           toNodeId: "p3-corridor",
           distanceMeters: 12,
           accessible: true,
