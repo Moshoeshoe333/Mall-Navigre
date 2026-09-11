@@ -21,19 +21,33 @@ test("Parking Truth Test: Save -> Reload -> Recover -> Offline -> Route", async 
 
 test("Parking Truth Test: corrupted persisted state fails closed", async ({ page }) => {
   await page.goto("/");
+  // Wait for the app's own IndexedDB hydration to finish before opening the
+  // same database from the test. This avoids racing the application's first
+  // database connection and turning a deterministic corruption test into a
+  // 30-second IndexedDB timeout.
+  await expect(page.locator("#hydration-skeleton")).toBeHidden();
+
   await page.evaluate(async () => {
     await new Promise<void>((resolve, reject) => {
       const request = indexedDB.open("mall-navigre", 2);
       request.onsuccess = () => {
         const db = request.result;
-        const tx = db.transaction("parking-sessions", "readwrite");
-        tx.objectStore("parking-sessions").put({ id: "corrupt" }, "active");
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => reject(tx.error);
+        try {
+          const tx = db.transaction("parking-sessions", "readwrite");
+          tx.objectStore("parking-sessions").put({ id: "corrupt" }, "active");
+          tx.oncomplete = () => { db.close(); resolve(); };
+          tx.onerror = () => { db.close(); reject(tx.error ?? new Error("Corruption write failed")); };
+          tx.onabort = () => { db.close(); reject(tx.error ?? new Error("Corruption write aborted")); };
+        } catch (error) {
+          db.close();
+          reject(error instanceof Error ? error : new Error("Corruption write failed"));
+        }
       };
-      request.onerror = () => reject(request.error);
+      request.onerror = () => reject(request.error ?? new Error("Database open failed"));
+      request.onblocked = () => reject(new Error("Database open was blocked"));
     });
   });
+
   await page.reload();
   await expect(page.locator("#hydration-skeleton")).toBeHidden();
   await expect(page.locator("#corrupted-state")).toBeVisible();
