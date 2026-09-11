@@ -86,7 +86,7 @@ describe("Gate 1 topology reconciliation", () => {
       ],
       nodes: [
         ...mallOfAfricaGraph.nodes,
-        { ...mallOfAfricaGraph.nodes[1], id: "p3-corridor", levelId: "mofa-parking-3", type: "corridor" as const },
+        { ...mallOfAfricaGraph.nodes[1], id: "p3-corridor", levelId: "mofa-parking-3", type: "corridor" as const, status: "active" as const },
       ],
       edges: [
         ...mallOfAfricaGraph.edges,
@@ -118,7 +118,7 @@ describe("Gate 1 topology reconciliation", () => {
       ],
       nodes: [
         ...mallOfAfricaGraph.nodes,
-        { ...mallOfAfricaGraph.nodes[1], id: "p3-corridor", levelId: "mofa-parking-3", type: "corridor" as const },
+        { ...mallOfAfricaGraph.nodes[1], id: "p3-corridor", levelId: "mofa-parking-3", type: "corridor" as const, status: "active" as const },
       ],
     };
 
@@ -142,7 +142,7 @@ describe("Gate 1 topology reconciliation", () => {
       ],
       nodes: [
         ...mallOfAfricaGraph.nodes,
-        { ...mallOfAfricaGraph.nodes[1], id: "p3-corridor", levelId: "mofa-parking-3", type: "corridor" as const },
+        { ...mallOfAfricaGraph.nodes[1], id: "p3-corridor", levelId: "mofa-parking-3", type: "corridor" as const, status: "active" as const },
       ],
       edges: [
         ...mallOfAfricaGraph.edges,
