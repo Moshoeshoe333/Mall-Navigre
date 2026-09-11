@@ -6,78 +6,125 @@
 
 ---
 
-## 33×3 Sieve: Guarantee Mode Mapping
+## 33×3 Sieve
 
-This project uses the **33×3 Sieve** (33 architectural perspectives, 3 degrees of verification: Existence, Coherence, Failure) as the governing standard for all features and architectural changes.
+NAVIGRE is governed by the **33×3 Sieve**: 33 architectural perspectives, each examined through three verification degrees — **Existence, Coherence, Failure**.
 
-### Current Verification State
+The sieve is an audit lens, not a list of 99 features. No claim may exceed its supporting evidence.
 
-**Core 0.1 Status: 60/99 (61%) — PRODUCT-READY FOR SCOPE**
+## Current project state — 2026-09-11
 
-| Perspective | E | C | F | Notes |
-|---|---|---|---|---|
-| **A. Reality** | ✅ | ✅ | ⚠️ | Physical model is schematic but explicitly marked unverified |
-| **B. Knowledge** | ✅ | ⚠️ | ⚠️ | Identities are unique within graph; cross-mall collision risk unfenced |
-| **C. Logic** | ✅ | ⚠️ | ⚠️ | Routing is correct; graph validation incomplete (no orphan detection) |
-| **D. Human Experience** | ✅ | ✅ | ⚠️ | UI is honest about limits; accessibility not yet automated |
-| **E. Technology** | ✅ | ⚠️ | ⚠️ | Local storage is robust; no server sync, no multi-device backup |
-| **F. Evolution** | ⚠️ | ⚠️ | ⚠️ | Multi-mall designed but unproven; data updates require redeploy |
+**Repository HEAD:** `232ea9cb633c5b52634d89392fc17872cee044cc`
 
-### Degree 1: EXISTENCE ✅ 27/33
-- ✅ Core features work: save parking, close app, reopen, find car, route
-- ✅ Offline operation verified (E2E automated)
-- ✅ Persistence with corruption detection (IndexedDB migrations)
-- ✅ A* routing engine with edge-distance authority
-- ⚠️ Orphaned node detection missing
-- ⚠️ Multi-mall instantiation untested
-- ⚠️ Live data update mechanism absent
+**Overall:** Core 0.1 foundation established; Core 0.2 truth-hardening is active. Current-head execution evidence is being reconstructed deliberately rather than inherited from older commits.
 
-**Verdict:** Core 0.1 scope is fully realized.
+| Area | State | Evidence ceiling |
+|---|---|---:|
+| Core 0.1 Parking Truth architecture | 🟢 | L2/L3 current; historical L4/L5 at `8a956e...` |
+| Local-first persistence | 🟢 | L2 |
+| Deterministic A* routing | 🟢 | L2 |
+| Graph integrity | 🟡 | L2; strict taxonomy reconciliation pending |
+| Gate 2 confidence | 🟡 | L1 contract candidate / L2 calculator / L3 tests |
+| Gate 2 production integration | 🔴 blocked | Not established |
+| Real Mall of Africa geometry | 🟡 | L1 schematic/unverified |
+| Localization / sensors | 🟡 | L2 interfaces only |
+| Accessibility verification | 🟡 | Partial; execution evidence pending |
+| Multi-mall | 🟡 | Partial architecture, runtime proof pending |
+| Gate 3 concurrency | 🔒 frozen | L1 |
 
-### Degree 2: COHERENCE ✅ 19/33
-- ✅ Domain models are internally consistent (Zod validation enforced)
-- ✅ Routing assumes valid graph; assumptions are documented
-- ✅ Confidence model is explicit (< 0.5 blocks routing)
-- ⚠️ Graph validator incomplete (no cross-reference checks)
-- ⚠️ Localization interface stubbed (GPS/BLE undefined)
-- ⚠️ Multi-tab conflicts not detected (last-write-wins silently)
-- ⚠️ No temporal coherence (stale data undetectable)
+See [`docs/MASTER-EVIDENCE-LEDGER.md`](docs/MASTER-EVIDENCE-LEDGER.md) for the current ledger.
 
-**Verdict:** Internal contracts are sound; external contracts have weak edges.
+### Evidence levels
 
-### Degree 3: FAILURE ✅ 14/33
-- ✅ Storage errors caught and surfaced (CORRUPTED, STORAGE_ERROR states)
-- ✅ Offline state maintained without data loss
-- ✅ Invalid graph fixtures rejected (Zod validation)
-- ⚠️ Orphaned node clusters allowed (silent logical error)
-- ⚠️ Confidence calculation missing (stubbed at 1.0 for manual)
-- ⚠️ No retry on transient network failure
-- ⚠️ Cross-device sync gap undetected
-- ⚠️ Stale mall data can be served without warning
+- **L0** — Undefined
+- **L1** — Defined
+- **L2** — Implemented
+- **L3** — Tested (test artifact exists)
+- **L4** — Executed (tests physically ran and passed)
+- **L5** — Integrated (adjacent systems verified together)
+- **L6** — Operational (real-world/release evidence)
 
-**Verdict:** Known failure modes are handled; unknown failure modes exist.
+**Tests existing ≠ tests passed. Workflow configuration ≠ execution. Commits ≠ runtime proof.**
 
 ---
 
-## Navigre Core 0.1
+## Core 0.1 — Parking Truth
 
-The first build is intentionally narrow: prove the **Parking Truth Test** before adding advanced systems.
+The first build intentionally proves a narrow vertical slice:
 
 `SAVE MY CAR → STORE → CLOSE APP → REOPEN → FIND MY CAR`
 
-### Core principles
+Core principles:
 
-- **Boring underneath. Beautiful on top.**
-- Local-first: the last valid parking state remains useful without network access.
-- Canonical mall infrastructure is separate from user-generated state.
+- Local-first persistence keeps the last valid parking state available offline.
+- Canonical mall infrastructure is separate from user-generated parking state.
 - Localization is a replaceable service; navigation is not.
-- Every spatial node has explicit mall/level/parkade context and may carry a physical visual landmark.
-- Confidence is explicit; below `0.5`, the experience must request landmark confirmation rather than silently trusting weak positioning.
+- Every spatial node carries explicit mall/level/parkade context.
+- Confidence is explicit; below `0.5`, landmark confirmation is required.
 - GPS does not become indoor precision by assertion.
 - Unverified geometry is disclosed.
 - Temporarily unavailable infrastructure is never routable.
 - Correctness comes before optimization; measured performance earns complexity.
-- The **33 × 3 sieve** is an architectural audit, not a list of 99 features.
+
+### Historical verification boundary
+
+The original Core 0.1 baseline was verified at commit `8a956e7510ab2730fdba9d131e3959fb9a679ad0`, including the documented Parking Truth E2E evidence. Those results are historical evidence and are **not automatically evidence for later commits**.
+
+Current HEAD must earn its own L4/L5 status through execution.
+
+---
+
+## Core 0.2 — Hardened Truth Boundaries
+
+### Gate 1 — Graph integrity
+
+Graph foundation and deterministic routing are implemented. A reconciliation pass remains necessary because later strict graph-contract identifiers are not established as current production code. **Do not mutate the validator speculatively.**
+
+### Gate 2 — Confidence formalization
+
+Gate 2 Contract v2 is a **candidate** decision, not yet production authority. It adopts:
+
+- **Policy C:** stored observation confidence + independent freshness;
+- persisted confidence is not silently decayed by elapsed time;
+- manual confidence remains unchanged at 24h and 48h;
+- freshness uses `updatedAt ?? capturedAt`;
+- `< 7 days` is not stale when temporal evidence is valid;
+- `>= 7 days` requires visible landmark confirmation;
+- invalid temporal evidence fails closed;
+- GPS alone cannot satisfy the `0.50` confidence boundary under the declared policy;
+- `visual` remains fail closed until explicitly authorized;
+- `RouteResult.verified` remains independent;
+- the experimental 24-hour half-life calculator is not production routing authority.
+
+**Gate 2 production integration is not authorized yet.** `page.tsx` remains untouched until the contract is accepted and the regression suite has executed successfully.
+
+### Gate 3 — Concurrency
+
+**FROZEN.** No multi-tab concurrency implementation until Gates 1 and 2 are resolved.
+
+---
+
+## Next controlled sequence
+
+1. Accept, reject, or amend Gate 2 Contract v2.
+2. Complete Pass 7 Contract v2 regression tests.
+3. Execute the exact commit locally/through CI and record L4 evidence.
+4. Introduce the smallest policy-owned routing authorization boundary.
+5. Integrate only after policy tests pass.
+6. Re-run offline Save → Reload → Find at browser level.
+7. Record L5 integration evidence.
+8. Reconcile and harden Gate 1.
+9. Validate physical Mall of Africa truth before claiming operational indoor navigation.
+
+**Do not:**
+
+- wire the experimental calculator into production prematurely;
+- replace stored confidence semantics by inference;
+- claim current CI green without a current run;
+- claim survey-grade or exact-bay positioning;
+- unfreeze Gate 3.
+
+---
 
 ## Repository map
 
@@ -86,6 +133,9 @@ Mall-Navigre/
 ├── ARCHITECTURE.md
 ├── 33x3-SIEVE.md
 ├── V1-SCOPE.md
+├── docs/
+│   ├── MASTER-EVIDENCE-LEDGER.md
+│   └── CORE-0.2-GATE-2-CONFIDENCE-CONTRACT.md
 ├── src/
 │   ├── app/                 # human experience
 │   ├── domain/              # navigation, routing, parking, localization, integrity
@@ -104,124 +154,33 @@ Deferred: BLE infrastructure, AR, AI Copilot, predictive routing, computer visio
 
 Mall geometry in the initial seed is deliberately **schematic/unverified** until properly digitized and validated. Public mall facts may inform configuration, but the application must not present uncertain data as precise.
 
-## Status
-
-**Core 0.1:** ✅ Complete and verified
-- Parking Truth Test passes (E2E automated)
-- All unit tests pass (23/23)
-- TypeScript strict mode passes
-- Production build passes
-- Dependencies locked and reproducible
-
-**Core 0.2:** ⏳ In planning (see below)
-
-## Core 0.2: Hardened Truth Boundaries
-
-Next engineering gates (planned):
-
-1. **Graph Validator** (Existence, Coherence, Failure)
-   - Detect orphaned/disconnected nodes
-   - Reject impossible cross-floor movement
-   - Validate accessibility constraints
-   - Ensure every node is reachable from entrance
-
-2. **Confidence Model Formalization**
-   - Define `observation → accuracy → confidence` function
-   - Remove hardcoded 1.0 for manual capture
-   - Prepare for GPS/BLE/WiFi provider integration
-
-3. **Concurrency Safety**
-   - Versioned parking sessions
-   - Detect multi-tab stale writes
-   - Deterministic conflict resolution
-
-4. **Real Mall of Africa Data**
-   - Verified node count, positions, distances
-   - Physical walkthrough validation
-   - Entrance/exit confirmation
-   - Landmark photographic proof
-
-5. **Accessibility Verification**
-   - Keyboard-only user testing (automated)
-   - Screen reader semantics (automated)
-   - Accessible routing constraints
-
-6. **Multi-Mall**
-   - Mall selection in UI (not hardcoded)
-   - Cross-mall routing proof
-   - Namespace collision prevention
-
-After Core 0.2 gates pass: **tag `v0.1.1-hardened`**
-
----
-
 ## Using the 33×3 Sieve
 
-For all PRs and features:
+For every feature or architectural change:
 
-1. **Map your work to at least 3 perspectives** (A–F, 1–33)
-2. **Prove all three degrees:** Does it exist? Does it cohere? What fails when it's wrong?
-3. **Document in the commit message** which sieve cells your change addresses
-4. **Link to tests** that verify Existence and Failure modes
-
-Example commit message:
-
-```
-feat: add graph validator
-
-Addresses Sieve perspectives C.12 (graph integrity), C.13 (routing), F.31 (expansion).
-
-Existence: Rejects orphaned nodes, dangling references, impossible transitions.
-Coherence: Walk edges only between same level; lift/stairs between different levels.
-Failure: Invalid graphs are rejected before routing; no silent corruption.
-
-Tests: tests/graph-validator.spec.ts (12 new tests, 100% pass)
-E2E: Parking Truth Test still passes with validator enabled.
-```
-
----
+1. Map the change to at least 3 perspectives.
+2. Test Existence, Coherence, and Failure.
+3. Classify the result as **DEFECT → FIX**, **RISK → MITIGATE**, **STRENGTH → PRESERVE**, **TRADE-OFF → DOCUMENT**, or **SPECULATION → VERIFY**.
+4. Record the highest justified evidence level.
+5. Never promote a claim merely because a file, test, commit, or workflow exists.
 
 ## How to Run
 
 ```bash
-npm ci              # Install locked dependencies
-npm run typecheck   # TypeScript strict mode
-npm test            # Vitest unit suite
-npm run build       # Production build
-npm run dev         # Development server
-npm run start       # Production server
-npx playwright test # E2E browser automation
+npm ci
+npm run typecheck
+npm test
+npm run build
+npm run dev
+npm run start
+npx playwright test
 ```
 
 All gates must pass before merging to main.
 
----
+## Dependencies
 
-## Current Verification Evidence
-
-| Gate | Command | Status |
-|---|---|---|
-| Dependency reproducibility | `npm ci` | ✅ PASS |
-| Type safety | `npm run typecheck` | ✅ PASS |
-| Unit tests | `npm test` | ✅ PASS (23/23) |
-| Production build | `npm run build` | ✅ PASS |
-| E2E truth test | `npx playwright test` | ✅ PASS (2/2) |
-| CI pipeline | GitHub Actions | ✅ GREEN |
-
-Latest verified commit: `8a956e7510ab2730fdba9d131e3959fb9a679ad0`
-
----
-
-## Architectural Principles
-
-- **Correctness-first routing:** Edge distances are authoritative; schematic geometry is conservative only.
-- **Local-first resilience:** Users never lose data, even without network.
-- **Explicit confidence:** No silent failures. < 0.5 confidence blocks routing.
-- **Honest about limits:** Unverified geometry is disclosed to users.
-- **Zod validation everywhere:** Runtime contracts enforce type safety.
-- **Offline-aware design:** App is fully functional without network.
-
----
+The audited package manifest uses exact dependency versions rather than loose `^` or `latest` ranges. Dependency pinning is therefore currently a **strength to preserve**, not an active defect.
 
 ## License
 
@@ -229,6 +188,4 @@ Proprietary (Mall Navigre)
 
 ---
 
-**Status:** Core 0.1 verified. Next gate: Graph validator (Core 0.2, item 1).
-
-**Governance:** All decisions evaluated against the 33×3 Sieve before merge.
+**Governance:** All decisions are evaluated against the 33×3 Sieve and the 7-Level Evidence Ledger before promotion.
