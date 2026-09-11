@@ -1,4 +1,7 @@
-import type { RouteViewModel } from "@/domain/navigation/presentation";
+export type RouteLifecycleRoute = {
+  mode: "ACTIVE_GUIDANCE" | "UNVERIFIED_PREVIEW" | "FAILED_CLOSED";
+  isGuidanceAllowed: boolean;
+};
 
 export type RouteInvalidationReason =
   | "ROUTE_NODE_UNAVAILABLE"
@@ -14,7 +17,7 @@ export type RouteFailureReason = "NO_USABLE_ROUTE" | "CALCULATION_REJECTED";
 export type RouteLifecycleState =
   | { status: "EMPTY" }
   | { status: "CALCULATING"; calculationId: string }
-  | { status: "ACTIVE"; calculationId: string; route: RouteViewModel }
+  | { status: "ACTIVE"; calculationId: string; route: RouteLifecycleRoute }
   | { status: "INVALIDATED"; reason: RouteInvalidationReason }
   | { status: "RE_ROUTING"; calculationId: string; reason: RouteInvalidationReason }
   | { status: "FAILED_CLOSED"; reason: RouteFailureReason };
@@ -22,11 +25,11 @@ export type RouteLifecycleState =
 const EMPTY: RouteLifecycleState = { status: "EMPTY" };
 
 /**
- * Temporal boundary for a presented route.
+ * Temporal boundary for a route decision.
  *
  * This class owns lifecycle state only. It does not calculate routes, mutate
- * graph state, or bypass the presentation contract. Calculation results are
- * committed only when their generation is still authoritative.
+ * graph state, or depend on the presentation module. The broader presentation
+ * model can satisfy RouteLifecycleRoute structurally at the integration seam.
  */
 export class RouteLifecycle {
   private stateValue: RouteLifecycleState = EMPTY;
@@ -36,7 +39,7 @@ export class RouteLifecycle {
     return this.stateValue;
   }
 
-  get currentRoute(): RouteViewModel | null {
+  get currentRoute(): RouteLifecycleRoute | null {
     return this.stateValue.status === "ACTIVE" ? this.stateValue.route : null;
   }
 
@@ -50,7 +53,7 @@ export class RouteLifecycle {
     return calculationId;
   }
 
-  completeCalculation(calculationId: string, route: RouteViewModel | null): boolean {
+  completeCalculation(calculationId: string, route: RouteLifecycleRoute | null): boolean {
     if (!this.isCurrentCalculation(calculationId)) return false;
 
     if (!route || route.mode === "FAILED_CLOSED") {
