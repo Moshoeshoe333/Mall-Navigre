@@ -53,8 +53,7 @@ describe("localization freshness contract", () => {
     const b = observation({ id: "b", mallId: "mall-b", capturedAt: new Date(NOW - 500).toISOString() });
     const fresh = [a, b].filter((candidate) => assessLocalizationFreshness(candidate, NOW).freshness === "fresh");
     expect(new Set(fresh.map((candidate) => candidate.mallId)).size).toBe(2);
-    expect(resolveFreshestUnambiguousObservation(fresh, NOW)).toBe(b);
-    // This selector is deliberately temporal only; the resolver must remain responsible for identity conflict.
+    // Temporal freshness deliberately does not resolve identity conflicts.
   });
 
   it("7. conflicting fresh floor identities remain a conflict, not a confidence contest", () => {
