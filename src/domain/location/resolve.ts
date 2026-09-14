@@ -1,14 +1,17 @@
 import type { LocationObservation } from "./types";
 import {
   DEFAULT_LOCALIZATION_FRESHNESS_POLICY,
-  resolveTemporalLocalization,
   type LocalizationFreshnessPolicy,
-} from "./temporal";
+} from "./freshness";
+import { resolveTemporalLocalization } from "./temporal";
 
 export type LocalizationState = "fresh" | "stale" | "conflicting" | "unresolved";
 
 export type LocalizationResult = {
   state: LocalizationState;
+  mallId?: string;
+  levelId?: string;
+  nodeId?: string;
   observation?: LocationObservation;
   confidence: number;
 };
@@ -25,5 +28,18 @@ export function resolveLocalization(
   nowMs: number,
   policy: LocalizationFreshnessPolicy = DEFAULT_LOCALIZATION_FRESHNESS_POLICY,
 ): LocalizationResult {
-  return resolveTemporalLocalization(observations, nowMs, policy);
+  const result = resolveTemporalLocalization(observations, nowMs, policy);
+
+  if (!result.observation) {
+    return { state: result.state, confidence: result.confidence };
+  }
+
+  return {
+    state: result.state,
+    mallId: result.observation.mallId,
+    ...(result.observation.levelId ? { levelId: result.observation.levelId } : {}),
+    ...(result.observation.nodeId ? { nodeId: result.observation.nodeId } : {}),
+    observation: result.observation,
+    confidence: result.confidence,
+  };
 }
