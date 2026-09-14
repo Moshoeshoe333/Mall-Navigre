@@ -20,3 +20,11 @@ export type {
 } from "@/domain/location/freshness";
 export { resolveTemporalLocalization } from "@/domain/location/temporal";
 export type { TemporalLocalizationResult, TemporalLocalizationState } from "@/domain/location/temporal";
+export {
+  authorizeRoutingStart,
+  RoutingStartAuthorizationIssue,
+} from "@/domain/location/routing-start-authorization";
+export type {
+  RoutingStartAuthorization,
+  RoutingStartAuthorizationIssueCode,
+} from "@/domain/location/routing-start-authorization";
