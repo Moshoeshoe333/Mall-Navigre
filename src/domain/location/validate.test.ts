@@ -52,7 +52,7 @@ const localization = (overrides: Partial<LocalizationResult> = {}): Localization
   confidence: 0.9,
   source: "manual",
   capturedAt: "2026-09-14T09:00:00.000Z",
-  state: "resolved",
+  state: "fresh",
   ...overrides,
 });
 
