@@ -67,12 +67,12 @@ export function validateGraphReachability(
   }
 
   if (components.length > 1) {
-    for (const component of components.slice(1)) {
+    for (const component of components) {
       const representative = component[0];
       issues.push({
         severity: "error",
         code: "ORPHANED_ACTIVE_COMPONENT",
-        message: `Active graph component containing ${representative} is disconnected from the primary active component`,
+        message: `Active graph component containing ${representative} is disconnected from the other active graph components`,
         entityId: representative,
       });
     }
