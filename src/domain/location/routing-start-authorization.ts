@@ -5,6 +5,7 @@ import type { LocalizationResult } from "./resolve";
 export const RoutingStartAuthorizationIssue = {
   NOT_FRESH: "ROUTING_START_NOT_FRESH",
   NO_NODE: "ROUTING_START_NODE_MISSING",
+  NODE_NOT_IN_GRAPH: "ROUTING_START_NODE_NOT_IN_GRAPH",
   GRAPH_MISMATCH: "ROUTING_START_GRAPH_MISMATCH",
   NODE_UNAVAILABLE: "ROUTING_START_NODE_UNAVAILABLE",
   NODE_UNVERIFIED: "ROUTING_START_NODE_UNVERIFIED",
@@ -45,6 +46,9 @@ export function authorizeRoutingStart(
     }
     if (codes.has("LOCALIZATION_NODE_UNVERIFIED")) {
       return { allowed: false, reason: RoutingStartAuthorizationIssue.NODE_UNVERIFIED };
+    }
+    if (codes.has("LOCALIZATION_NODE_MISSING")) {
+      return { allowed: false, reason: RoutingStartAuthorizationIssue.NODE_NOT_IN_GRAPH };
     }
     return { allowed: false, reason: RoutingStartAuthorizationIssue.GRAPH_MISMATCH };
   }
