@@ -27,7 +27,11 @@ function geometryScale(graph: MallGraph): number {
 /** Correctness-first A*. Edge distance is authoritative; schematic geometry is only a conservative heuristic. */
 export function findRoute(graph: MallGraph, startNodeId: string, targetNodeId: string, accessibleOnly = false): RouteResult | null {
   const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
-  const usable = new Set(graph.nodes.filter((n) => n.status !== "temporarily_unavailable").map((n) => n.id));
+  const usable = new Set(
+    graph.nodes
+      .filter((n) => n.status !== "temporarily_unavailable" && (!accessibleOnly || n.accessible))
+      .map((n) => n.id),
+  );
   if (!usable.has(startNodeId) || !usable.has(targetNodeId)) return null;
   if (startNodeId === targetNodeId) {
     return { nodeIds: [startNodeId], edgeIds: [], distanceMeters: 0, verified: nodes.get(startNodeId)?.status === "active" };
