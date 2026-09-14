@@ -18,8 +18,17 @@ const baseNode = {
 function graph(overrides: Partial<MallGraph["nodes"][number]> = {}): MallGraph {
   return {
     mallId: "mall-a",
+    levels: [
+      {
+        id: "level-1",
+        mallId: "mall-a",
+        name: "Level 1",
+        order: 1,
+      },
+    ],
     nodes: [{ ...baseNode, ...overrides }],
     edges: [],
+    places: [],
   };
 }
 
