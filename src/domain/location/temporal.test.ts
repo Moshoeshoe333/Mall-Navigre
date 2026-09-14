@@ -25,32 +25,36 @@ describe("temporal localization contract", () => {
   });
 
   it("STALE: rejects an old high-confidence observation instead of refreshing it", () => {
-    const stale = observation({ confidence: 0.99, capturedAt: new Date(NOW - 10_000).toISOString() });
-    const result = resolveTemporalLocalization([stale], NOW);
+    const result = resolveTemporalLocalization([
+      observation({ confidence: 0.99, capturedAt: new Date(NOW - 10_000).toISOString() }),
+    ], NOW);
     expect(result.state).toBe("stale");
     expect(result.observation).toBeUndefined();
   });
 
   it("CONFLICTING: fresh mall identities cannot be resolved by confidence", () => {
-    const a = observation({ mallId: "mall-a", confidence: 0.99 });
-    const b = observation({ mallId: "mall-b", capturedAt: new Date(NOW - 500).toISOString(), confidence: 0.55 });
-    const result = resolveTemporalLocalization([a, b], NOW);
+    const result = resolveTemporalLocalization([
+      observation({ mallId: "mall-a", confidence: 0.99 }),
+      observation({ mallId: "mall-b", capturedAt: new Date(NOW - 500).toISOString(), confidence: 0.55 }),
+    ], NOW);
     expect(result.state).toBe("conflicting");
     expect(result.observation).toBeUndefined();
   });
 
   it("CONFLICTING: fresh floor identities cannot be resolved by recency", () => {
-    const a = observation({ levelId: "level-1", confidence: 0.99 });
-    const b = observation({ levelId: "level-2", capturedAt: new Date(NOW - 500).toISOString(), confidence: 0.55 });
-    const result = resolveTemporalLocalization([a, b], NOW);
+    const result = resolveTemporalLocalization([
+      observation({ levelId: "level-1", confidence: 0.99 }),
+      observation({ levelId: "level-2", capturedAt: new Date(NOW - 500).toISOString(), confidence: 0.55 }),
+    ], NOW);
     expect(result.state).toBe("conflicting");
     expect(result.observation).toBeUndefined();
   });
 
   it("CONFLICTING: fresh node identities cannot be resolved by confidence", () => {
-    const a = observation({ nodeId: "node-a", confidence: 0.99 });
-    const b = observation({ nodeId: "node-b", capturedAt: new Date(NOW - 500).toISOString(), confidence: 0.55 });
-    const result = resolveTemporalLocalization([a, b], NOW);
+    const result = resolveTemporalLocalization([
+      observation({ nodeId: "node-a", confidence: 0.99 }),
+      observation({ nodeId: "node-b", capturedAt: new Date(NOW - 500).toISOString(), confidence: 0.55 }),
+    ], NOW);
     expect(result.state).toBe("conflicting");
     expect(result.observation).toBeUndefined();
   });
@@ -65,19 +69,23 @@ describe("temporal localization contract", () => {
     expect(result.observation).toBeUndefined();
   });
 
-  it("future-dated observations do not become fresh evidence", () => {
-    const result = resolveTemporalLocalization([observation({ capturedAt: new Date(NOW + 1).toISOString() })], NOW);
-    expect(result.state).toBe("stale");
+  it("UNRESOLVED: future-dated evidence is invalid and cannot become fresh", () => {
+    const result = resolveTemporalLocalization([
+      observation({ capturedAt: new Date(NOW + 1).toISOString() }),
+    ], NOW);
+    expect(result.state).toBe("unresolved");
     expect(result.observation).toBeUndefined();
   });
 
-  it("stale conflicting observations remain stale rather than becoming a current conflict", () => {
-    const a = observation({ mallId: "mall-a", capturedAt: new Date(NOW - 10_000).toISOString() });
-    const b = observation({ mallId: "mall-b", capturedAt: new Date(NOW - 11_000).toISOString() });
-    expect(resolveTemporalLocalization([a, b], NOW).state).toBe("stale");
+  it("STALE: stale conflicting observations do not become a current conflict", () => {
+    const result = resolveTemporalLocalization([
+      observation({ mallId: "mall-a", capturedAt: new Date(NOW - 10_000).toISOString() }),
+      observation({ mallId: "mall-b", capturedAt: new Date(NOW - 11_000).toISOString() }),
+    ], NOW);
+    expect(result.state).toBe("stale");
   });
 
-  it("timestamp policy cannot mutate the observation or imply route verification", () => {
+  it("preserves observations and never produces route verification state", () => {
     const source = observation({ capturedAt: new Date(NOW - 10_000).toISOString() });
     const before = structuredClone(source);
     const result = resolveTemporalLocalization([source], NOW);
