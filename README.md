@@ -12,32 +12,33 @@ NAVIGRE is governed by the **33×3 Sieve**: 33 architectural perspectives, each 
 
 The sieve is an audit lens, not a list of 99 features. No claim may exceed its supporting evidence.
 
-## Current project state — 2026-09-11
+## Current project state — 2026-09-14
 
-**Current repository HEAD:** `9af8249e499b3545d9f1b948e1797545ed2c7847`
+**Current `main` merge boundary:** `e94e3583ba46c7358fcd018ee5a2c877ea2cab0a`
 
-**Current automated evidence:** CI and the Parking Truth browser workflow both pass against the exact current head.
+**Gate 2 L5 PR head:** `c611672bc82fee2cbbf3e9dc8e27c51bac49c11c`
 
-**Overall:** Core 0.1 foundation is established. Core 0.2 truth-hardening is active. Gate 2 authorization is implemented and executed at L4. Gate 2 L5 remains deliberately unclaimed pending a dedicated decision-chain integration test.
+PR #10 established the smallest adjacent-system decision-chain harness:
+
+`ParkingSession → freshness/state → authorization → findRoute → RouteOperationalState → RouteResult.verified`
+
+The exact PR head passed Navigre CI and Parking Truth. PR #10 was then squash-merged into `main` at `e94e358...`. At the 2026-09-14 audit point, the merge SHA had **0 PR-associated workflow runs and 0 commit statuses observed**. This is recorded as **EXECUTION EVIDENCE NOT OBSERVED**, not as a permanent failure. PR-head evidence is not silently transferred to the merge SHA.
 
 | Area | State | Evidence ceiling |
 |---|---|---:|
-| Core 0.1 Parking Truth | 🟢 | L4 current browser execution |
-| Local-first persistence | 🟢 | L4 current browser truth workflow |
-| Deterministic A* routing | 🟢 | L4 current browser truth workflow |
-| Graph integrity | 🟡 | L2; strict taxonomy reconciliation pending |
-| Gate 2 confidence contract | 🟡 | L1 candidate governance decision |
-| Gate 2 calculator | 🟡 | L2 experimental / L4 tests |
-| Gate 2 regression | 🟢 | L4 — current CI: 10 files / 88 tests |
-| Gate 2 authorization | 🟢 | L4 — current CI + browser path |
-| Gate 2 L5 integration | 🟡 | Not claimed; decision-chain test pending |
+| Core 0.1 Parking Truth | 🟢 | L4 historical / boundary-aware |
+| Local-first persistence | 🟢 | L4 historical |
+| Deterministic A* routing | 🟢 | L4 historical + invariant PR-head evidence |
+| R1–R6 graph invariants | 🟢 | PR-head verified; merge-boundary evidence separately tracked |
+| Gate 2 authorization | 🟢 | L4 historical / bounded integration |
+| Gate 2 L5 integration | 🟡 | PR-head verified; merge-boundary execution evidence not observed |
 | Real Mall of Africa geometry | 🟡 | L1 schematic/unverified |
 | Localization / sensors | 🟡 | L2 interfaces only |
 | Accessibility verification | 🟡 | Partial |
 | Multi-mall | 🟡 | Partial architecture, runtime proof pending |
 | Gate 3 concurrency | 🔒 frozen | L1 |
 
-See [`docs/MASTER-EVIDENCE-LEDGER.md`](docs/MASTER-EVIDENCE-LEDGER.md) for the detailed evidence record.
+See `docs/MASTER-EVIDENCE-LEDGER.md` for the detailed evidence record.
 
 ### Evidence levels
 
@@ -49,7 +50,7 @@ See [`docs/MASTER-EVIDENCE-LEDGER.md`](docs/MASTER-EVIDENCE-LEDGER.md) for the d
 - **L5** — Integrated (adjacent systems verified together)
 - **L6** — Operational (real-world/release evidence)
 
-**Tests existing ≠ tests passed. Workflow configuration ≠ execution. Commits ≠ runtime proof.**
+**Tests existing ≠ tests passed. Workflow configuration ≠ execution. Commits ≠ runtime proof. PR-head execution ≠ merge-boundary execution.**
 
 ---
 
@@ -71,63 +72,45 @@ Core principles:
 - Temporarily unavailable infrastructure is never routable.
 - Correctness comes before optimization; measured performance earns complexity.
 
-### Current execution evidence
-
-On current head `9af8249e499b3545d9f1b948e1797545ed2c7847`:
-
-- `npm ci` — PASS
-- `npm run typecheck` — PASS
-- `npm test` — PASS: **10 files / 88 tests**
-- Parking Truth production build — PASS
-- Next.js start/wait — PASS
-- Browser Truth Test — PASS
-
-The previous Core 0.1 evidence at `8a956e...` remains historical and is not silently transferred to later code.
-
 ---
 
 ## Core 0.2 — Hardened Truth Boundaries
 
-### Gate 1 — Graph integrity
+### R1–R6 graph invariants
 
-Graph foundation and deterministic routing are implemented. A reconciliation pass remains necessary because later strict graph-contract identifiers are not established as current production code. **Do not mutate the validator speculatively.**
+The graph truth layer has been hardened across six controlled seams:
 
-### Gate 2 — Confidence formalization
+- **R1:** transition endpoint reachability
+- **R2:** cross-floor semantic integrity
+- **R3:** graph reachability
+- **R4:** destination reachability
+- **R5:** accessibility consistency
+- **R6:** failure / failover integrity
 
-The repository separates **stored observation confidence** from **freshness**. The experimental 24-hour half-life calculator is not production routing authority.
+These invariants are verified at their respective exact PR-head boundaries. They do **not** constitute physical certification of Mall of Africa, survey-grade geometry, or operational indoor positioning.
 
-The current policy-owned authorization boundary evaluates:
+### Gate 2 L5 integration
 
-- missing session → reject;
-- invalid confidence → reject;
-- `visual` source → fail closed;
-- GPS alone → reject as independent authority;
-- confidence `< 0.50` → reject / request confirmation;
-- stale, invalid, or future temporal evidence → reject;
-- otherwise → eligible.
+The production decision boundary is deliberately explicit:
 
-The boundary does not mutate the persisted `ParkingSession` and does not conflate authorization with `RouteResult.verified`.
+`stored ParkingSession → freshness/state → policy authorization → deterministic A* route → RouteOperationalState → RouteResult.verified → UI`
 
-### Current Gate 2 regression evidence
+The Gate 2 integration harness carries one persisted session through controlled mutations to prove that authorization, route existence, operational validity, and route verification remain distinct truths.
 
-The current head CI run passed:
+Exact PR-head evidence:
 
-- 10 test files;
-- 88 tests;
-- 30 calculator tests;
-- 9 confidence-regression tests;
-- 13 freshness/state tests;
-- 13 routing-authorization tests.
+- Navigre CI: run `34834367497`, job `103944710821` — **SUCCESS**
+- Parking Truth Test: run `34834367456`, job `103944710055` — **SUCCESS**
 
-The dedicated regression suite covers stored-confidence preservation, exact `0.50` eligibility, low-confidence rejection, seven-day staleness, GPS/visual fail-closed behavior, invalid/future timestamps, and separation of experimental decay from production authorization.
+Merge boundary:
 
-### Production path
+- PR #10 — squash merged
+- exact `main` SHA: `e94e3583ba46c7358fcd018ee5a2c877ea2cab0a`
+- merge-boundary workflow runs observed at audit time: **0**
+- merge-boundary commit statuses observed at audit time: **0**
+- status: **EXECUTION EVIDENCE NOT OBSERVED**
 
-The current production flow is:
-
-`stored ParkingSession → policy authorization → deterministic A* route → RouteResult.verified → UI`
-
-This is executed successfully within the current CI/browser scope. It is **not yet promoted to L5** because the project ledger requires a dedicated adjacent-system decision-chain artifact before making that claim.
+No synthetic workflow trigger is used solely to create boundary evidence.
 
 ### Gate 3 — Concurrency
 
@@ -137,21 +120,13 @@ This is executed successfully within the current CI/browser scope. It is **not y
 
 ## Next controlled sequence
 
-1. Add the smallest decision-chain integration test:
-   `ParkingSession → freshness/state → authorization → findRoute → RouteResult.verified`.
-2. Explicitly assert that authorization and route verification remain independent.
-3. Execute the new test on CI at a new exact head.
-4. Reassess Gate 2 L5 using the evidence ledger — without promoting beyond what the artifact proves.
-5. Reconcile and harden Gate 1.
-6. Validate physical Mall of Africa truth before claiming operational indoor navigation.
+1. Complete this evidence reconciliation through the normal documentation PR path.
+2. Recheck the exact merge boundary without transferring PR-head evidence.
+3. Run the **33×3 Spatial Sieve Audit** across the **Graph Truth Core ↔ Localization Interface**.
+4. Verify that sensor contracts remain decoupled from deterministic A* routing.
+5. Only then consider crossing into localization implementation or further system complexity.
 
-**Do not:**
-
-- wire the experimental calculator into production prematurely;
-- replace stored confidence semantics by inference;
-- claim L5 from L4 execution alone;
-- claim survey-grade or exact-bay positioning;
-- unfreeze Gate 3.
+Do not wire experimental calculators into production prematurely, replace stored confidence semantics by inference, claim survey-grade or exact-bay positioning, or unfreeze Gate 3.
 
 ---
 
@@ -209,9 +184,9 @@ All gates must pass before merging to main.
 
 ## Dependencies
 
-The audited package manifest uses exact dependency versions rather than loose `^` or `latest` ranges. Dependency pinning is therefore currently a **strength to preserve**, not an active defect.
+The audited package manifest uses exact dependency versions rather than loose `^` or `latest` ranges. Dependency pinning remains a strength to preserve.
 
-CI currently reports an eslint support warning and runner/action Node.js deprecation warnings. These are maintenance signals, not correctness failures, and should be handled separately from Gate 2.
+CI eslint support warnings and runner/action Node.js deprecation warnings are maintenance signals, not correctness evidence, and should be handled separately from the truth-hardening gates.
 
 ## License
 
