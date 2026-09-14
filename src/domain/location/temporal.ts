@@ -25,13 +25,16 @@ export function resolveTemporalLocalization(
     return { state: "unresolved", confidence: 0 };
   }
 
-  const fresh = observations.filter(
-    (observation) => assessLocalizationFreshness(observation, nowMs, policy).freshness === "fresh",
-  );
+  const assessments = observations.map((observation) => ({
+    observation,
+    freshness: assessLocalizationFreshness(observation, nowMs, policy).freshness,
+  }));
+  const fresh = assessments.filter(({ freshness }) => freshness === "fresh").map(({ observation }) => observation);
+  const invalid = assessments.some(({ freshness }) => freshness === "invalid");
 
   if (fresh.length === 0) {
     const confidence = Math.max(...observations.map((observation) => observation.confidence));
-    return { state: "stale", confidence };
+    return { state: invalid ? "unresolved" : "stale", confidence };
   }
 
   const mallIds = new Set(fresh.map((observation) => observation.mallId));
@@ -47,6 +50,11 @@ export function resolveTemporalLocalization(
   const knownNodes = new Set(fresh.map((observation) => observation.nodeId).filter(Boolean));
   if (knownNodes.size > 1) {
     return { state: "conflicting", confidence: Math.max(...fresh.map((observation) => observation.confidence)) };
+  }
+
+  // Invalid future/undated evidence cannot strengthen a current claim, even when fresh evidence exists.
+  if (invalid) {
+    return { state: "unresolved", confidence: Math.max(...fresh.map((observation) => observation.confidence)) };
   }
 
   const selected = [...fresh].sort((a, b) => {
