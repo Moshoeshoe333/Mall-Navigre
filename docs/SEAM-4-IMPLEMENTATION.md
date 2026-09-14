@@ -1,0 +1,1 @@
+Spatial Seam 4 implementation boundary is established in `src/domain/location/routing-start-authorization.ts` with adversarial coverage in `src/domain/location/routing-start-authorization.test.ts`. The gate is deliberately separate from destination authorization and route verification.
