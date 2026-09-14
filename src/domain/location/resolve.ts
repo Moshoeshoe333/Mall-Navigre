@@ -14,6 +14,8 @@ export type LocalizationResult = {
   nodeId?: string;
   observation?: LocationObservation;
   confidence: number;
+  source?: LocationObservation["source"];
+  capturedAt?: string;
 };
 
 /**
@@ -41,5 +43,7 @@ export function resolveLocalization(
     ...(result.observation.nodeId ? { nodeId: result.observation.nodeId } : {}),
     observation: result.observation,
     confidence: result.confidence,
+    source: result.observation.source,
+    capturedAt: result.observation.capturedAt,
   };
 }
