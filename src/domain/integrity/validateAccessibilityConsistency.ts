@@ -1,4 +1,4 @@
-import type { MallGraph, MallNode } from "@/domain/navigation/types";
+import type { MallGraph } from "@/domain/navigation/types";
 
 export type AccessibilityConsistencyIssue = {
   severity: "error";
