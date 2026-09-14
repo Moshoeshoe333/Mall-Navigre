@@ -69,10 +69,10 @@ describe("authorizeRoutingStart", () => {
     });
   });
 
-  it("rejects a missing node", () => {
+  it("distinguishes a node identity that is absent from the current graph", () => {
     expect(authorizeRoutingStart(localization({ nodeId: "missing" }), graph())).toEqual({
       allowed: false,
-      reason: RoutingStartAuthorizationIssue.GRAPH_MISMATCH,
+      reason: RoutingStartAuthorizationIssue.NODE_NOT_IN_GRAPH,
     });
   });
 
